@@ -33,13 +33,24 @@ class ExpressServer {
     }));
 
     // CORS
-    // this.app.use(cors({
-    //   origin: true,
-    //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    //   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    //   credentials: true
-    // }));
-    this.app.use(cors());
+const allowedOrigins = [
+  'https://efarmerinterviews.netlify.app', // Netlify prod
+  'http://localhost:3000' // dev
+];
+
+this.app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With'],
+  credentials: true
+}));
+
 // For preflight requests
 this.app.options('*', cors());
     // Rate limiting - Désactivé pour le développement
