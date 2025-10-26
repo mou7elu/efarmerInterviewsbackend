@@ -1,16 +1,19 @@
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const apiRoutes = require('./routes');
 const { errorHandler, notFoundHandler, validateJsonContent } = require('./middleware/errorHandler');
 
 /**
- * Configuration et initialisation du serveur Express avec Clean Architecture
+ * Serveur Express avec Clean Architecture et CORS fonctionnel
  */
 class ExpressServer {
   constructor() {
     this.app = express();
+    this.allowedOrigins = [
+      'https://efarmerinterviews.netlify.app', // Production
+      'http://localhost:3000' // Développement
+    ];
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupErrorHandling();
@@ -20,75 +23,47 @@ class ExpressServer {
    * Configuration des middlewares globaux
    */
   setupMiddleware() {
-    // Sécurité
-    this.app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", "data:", "https:"]
+    // Sécurité HTTP
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"]
+          }
         }
-      }
-    }));
+      })
+    );
 
-
-
-// For preflight requests
-//this.app.options('*', cors());
-    // Rate limiting - Désactivé pour le développement
-    // const limiter = rateLimit({
-    //   windowMs: 15 * 60 * 1000, // 15 minutes
-    //   max: 100, // Limite chaque IP à 100 requêtes par windowMs
-    //   message: {
-    //     success: false,
-    //     error: 'RATE_LIMIT_EXCEEDED',
-    //     message: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.'
-    //   },
-    //   standardHeaders: true,
-    //   legacyHeaders: false
-    // });
-    // this.app.use('/api/', limiter);
-
-    // Parsing du JSON
-    this.app.use(express.json({ 
-      limit: '10mb',
-      verify: (req, res, buf, encoding) => {
-        try {
-          JSON.parse(buf);
-        } catch (e) {
-          const error = new SyntaxError('Invalid JSON');
-          error.status = 400;
-          error.body = buf;
-          throw error;
-        }
-      }
-    }));
-
+    // Parsing du JSON et URL-encoded
+    this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-        // CORS
-const allowedOrigins = [
-  'https://efarmerinterviews.netlify.app', // Netlify prod
-  'http://localhost:3000' // dev
-];
+    // CORS avec gestion des préflights
+    this.app.use((req, res, next) => {
+      const origin = req.headers.origin;
+      if (this.allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+        );
+        res.setHeader(
+          'Access-Control-Allow-Headers',
+          'Content-Type,Authorization,X-Requested-With'
+        );
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
 
-this.app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+      if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+      }
 
-  // Répond aux requêtes OPTIONS préflight
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+      next();
+    });
 
-  next();
-});
     // Validation du contenu JSON
     this.app.use(validateJsonContent);
 
@@ -103,7 +78,7 @@ this.app.use((req, res, next) => {
       });
     }
 
-    // Headers de réponse personnalisés
+    // Headers personnalisés
     this.app.use((req, res, next) => {
       res.setHeader('X-API-Version', '1.0.0');
       res.setHeader('X-Powered-By', 'eFarmer Clean Architecture');
@@ -112,10 +87,10 @@ this.app.use((req, res, next) => {
   }
 
   /**
-   * Configuration des routes
+   * Routes
    */
   setupRoutes() {
-    // Route de santé du serveur
+    // Health check
     this.app.get('/health', (req, res) => {
       res.json({
         success: true,
@@ -127,10 +102,10 @@ this.app.use((req, res, next) => {
       });
     });
 
-    // Routes API principales
+    // API routes
     this.app.use('/api', apiRoutes);
 
-    // Route racine
+    // Root
     this.app.get('/', (req, res) => {
       res.json({
         success: true,
@@ -143,16 +118,12 @@ this.app.use((req, res, next) => {
   }
 
   /**
-   * Configuration de la gestion des erreurs
+   * Gestion des erreurs
    */
   setupErrorHandling() {
-    // Gestion des routes non trouvées
     this.app.use(notFoundHandler);
-
-    // Gestion globale des erreurs
     this.app.use(errorHandler);
 
-    // Gestion des erreurs non capturées
     process.on('uncaughtException', (error) => {
       console.error('Uncaught Exception:', error);
       process.exit(1);
@@ -165,7 +136,7 @@ this.app.use((req, res, next) => {
   }
 
   /**
-   * Démarre le serveur
+   * Démarrer le serveur
    */
   start(port = process.env.PORT || 3001) {
     return new Promise((resolve, reject) => {
@@ -187,7 +158,6 @@ this.app.use((req, res, next) => {
           }
           reject(error);
         });
-
       } catch (error) {
         console.error('❌ Erreur lors du démarrage du serveur:', error);
         reject(error);
@@ -196,7 +166,7 @@ this.app.use((req, res, next) => {
   }
 
   /**
-   * Arrête le serveur proprement
+   * Arrêter le serveur
    */
   stop(server) {
     return new Promise((resolve) => {
@@ -212,7 +182,7 @@ this.app.use((req, res, next) => {
   }
 
   /**
-   * Obtient l'instance Express
+   * Instance Express
    */
   getApp() {
     return this.app;
