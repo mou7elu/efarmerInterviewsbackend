@@ -21,9 +21,7 @@ class ExpressServer {
 
   setupMiddleware() {
     this.app.use(
-      helmet({
-        contentSecurityPolicy: false
-      })
+      helmet()
     );
 
     this.app.use(express.json({ limit: '10mb' }));
