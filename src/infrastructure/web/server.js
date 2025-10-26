@@ -32,28 +32,7 @@ class ExpressServer {
       }
     }));
 
-    // CORS
-const allowedOrigins = [
-  'https://efarmerinterviews.netlify.app', // Netlify prod
-  'http://localhost:3000' // dev
-];
 
-this.app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  // Répond aux requêtes OPTIONS préflight
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
 
 // For preflight requests
 //this.app.options('*', cors());
@@ -88,6 +67,28 @@ this.app.use((req, res, next) => {
 
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+        // CORS
+const allowedOrigins = [
+  'https://efarmerinterviews.netlify.app', // Netlify prod
+  'http://localhost:3000' // dev
+];
+
+this.app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  // Répond aux requêtes OPTIONS préflight
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
     // Validation du contenu JSON
     this.app.use(validateJsonContent);
 
