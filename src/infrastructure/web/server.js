@@ -56,7 +56,7 @@ this.app.use((req, res, next) => {
 });
 
 // For preflight requests
-this.app.options('*', cors());
+//this.app.options('*', cors());
     // Rate limiting - Désactivé pour le développement
     // const limiter = rateLimit({
     //   windowMs: 15 * 60 * 1000, // 15 minutes
