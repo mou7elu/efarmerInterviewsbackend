@@ -30,18 +30,8 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // CORS CORRECTEMENT APPLIQUE
-    const corsOptions = {
-      origin: '*',
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-    };
-
-    // Appliquer CORS à toute l'application
-    this.app.use(cors(corsOptions));
-
-    // Répondre aux requêtes OPTIONS préflight
-    this.app.options('*', cors(corsOptions));
+  app.use(cors({ origin: '*', credentials: true }));
+app.options('*', cors({ origin: '*', credentials: true }));
 
     this.app.use(validateJsonContent);
 

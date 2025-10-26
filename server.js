@@ -9,9 +9,8 @@ const app = express();
 
 // Middleware de sécurité
 app.use(helmet());
-app.use(cors());
-// For preflight requests
-app.options('*', cors());
+app.use(cors({ origin: '*', credentials: true }));
+app.options('*', cors({ origin: '*', credentials: true }));
 // Rate limiting - Désactivé pour le développement
 // const limiter = rateLimit({
 //   windowMs: 15 * 60 * 1000, // 15 minutes
