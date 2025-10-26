@@ -47,6 +47,7 @@
     "mongoose": "^7.6.3",
     "morgan": "^1.10.0",
     "pizzip": "^3.2.0",
+    "puppeteer": "^23.0.0",
 	"mammoth": "^1.6.0"
   },
   "devDependencies": {
