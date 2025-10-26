@@ -34,7 +34,7 @@ class ExpressServer {
 
     // CORS
     this.app.use(cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       credentials: true
