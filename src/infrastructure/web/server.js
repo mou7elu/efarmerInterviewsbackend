@@ -42,27 +42,30 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // CORS avec gestion des préflights
-    this.app.use((req, res, next) => {
-      const origin = req.headers.origin;
-      if (this.allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader(
-          'Access-Control-Allow-Methods',
-          'GET,POST,PUT,PATCH,DELETE,OPTIONS'
-        );
-        res.setHeader(
-          'Access-Control-Allow-Headers',
-          'Content-Type,Authorization,X-Requested-With'
-        );
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-      }
+const allowedOrigins = [
+  'https://efarmerinterviews.netlify.app',
+  'http://localhost:3000'
+];
 
-      if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-      }
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Autorise les requêtes sans origin (ex: Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS non autorisé pour cet origin'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
-      next();
-    });
+app.use(cors(corsOptions));
+
+// Pour les OPTIONS préflight
+app.options('*', cors(corsOptions));
 
     // Validation du contenu JSON
     this.app.use(validateJsonContent);
