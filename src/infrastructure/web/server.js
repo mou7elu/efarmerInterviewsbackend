@@ -28,8 +28,8 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // CORS CORRECTEMENT APPLIQUE
-   this.app.use(cors({ origin: '*', credentials: true }));
- this.app.options('*', cors({ origin: '*', credentials: true }));
+   this.app.use(cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
+ this.app.options('*', cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
 
     this.app.use(validateJsonContent);
 
