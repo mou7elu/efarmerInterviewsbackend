@@ -22,14 +22,7 @@ class ExpressServer {
   setupMiddleware() {
     this.app.use(
       helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"]
-          }
-        }
+        contentSecurityPolicy: false
       })
     );
 
@@ -38,11 +31,7 @@ class ExpressServer {
 
     // CORS CORRECTEMENT APPLIQUE
     const corsOptions = {
-      origin: (origin, callback) => {
-        if (!origin) return callback(null, true); // Postman ou server-to-server
-        if (this.allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('CORS non autorisé pour cet origin'));
-      },
+      origin: '*',
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
