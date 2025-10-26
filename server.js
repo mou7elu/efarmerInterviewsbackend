@@ -20,8 +20,30 @@ app.use(helmet());
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
-app.options('*', cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
+const allowedOrigins = [
+  'https://efarmerinterviews.netlify.app',
+  'http://localhost:3000'
+];
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+app.options('*', cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));

@@ -28,8 +28,30 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // CORS CORRECTEMENT APPLIQUE
-   this.app.use(cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
- this.app.options('*', cors({ origin: ['https://efarmerinterviews.netlify.app', 'http://localhost:3000'], credentials: true }));
+    const allowedOrigins = [
+      'https://efarmerinterviews.netlify.app',
+      'http://localhost:3000'
+    ];
+    this.app.use(cors({
+      origin: function(origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true
+    }));
+    this.app.options('*', cors({
+      origin: function(origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true
+    }));
 
     this.app.use(validateJsonContent);
 
