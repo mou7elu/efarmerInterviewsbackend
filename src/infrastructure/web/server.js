@@ -1,14 +1,14 @@
 const express = require('express');
 const helmet = require('helmet');
+const cors = require('cors'); // n'oublie pas d'importer cors
 const apiRoutes = require('./routes');
 const { errorHandler, notFoundHandler, validateJsonContent } = require('./middleware/errorHandler');
 
-/**
- * Serveur Express avec Clean Architecture et CORS fonctionnel
- */
 class ExpressServer {
   constructor() {
     this.app = express();
+
+    // Définir les origines autorisées
     this.allowedOrigins = [
       'https://efarmerinterviews.netlify.app', // Production
       'http://localhost:3000' // Développement
@@ -19,11 +19,7 @@ class ExpressServer {
     this.setupErrorHandling();
   }
 
-  /**
-   * Configuration des middlewares globaux
-   */
   setupMiddleware() {
-    // Sécurité HTTP
     this.app.use(
       helmet({
         contentSecurityPolicy: {
@@ -37,40 +33,29 @@ class ExpressServer {
       })
     );
 
-    // Parsing du JSON et URL-encoded
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-    // CORS avec gestion des préflights
-const allowedOrigins = [
-  'https://efarmerinterviews.netlify.app',
-  'http://localhost:3000'
-];
+    // CORS CORRECTEMENT APPLIQUE
+    const corsOptions = {
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true); // Postman ou server-to-server
+        if (this.allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS non autorisé pour cet origin'));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    };
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Autorise les requêtes sans origin (ex: Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('CORS non autorisé pour cet origin'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-};
+    // Appliquer CORS à toute l'application
+    this.app.use(cors(corsOptions));
 
-app.use(cors(corsOptions));
+    // Répondre aux requêtes OPTIONS préflight
+    this.app.options('*', cors(corsOptions));
 
-// Pour les OPTIONS préflight
-app.options('*', cors(corsOptions));
-
-    // Validation du contenu JSON
     this.app.use(validateJsonContent);
 
-    // Logging des requêtes en développement
     if (process.env.NODE_ENV === 'development') {
       this.app.use((req, res, next) => {
         console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
@@ -81,7 +66,6 @@ app.options('*', cors(corsOptions));
       });
     }
 
-    // Headers personnalisés
     this.app.use((req, res, next) => {
       res.setHeader('X-API-Version', '1.0.0');
       res.setHeader('X-Powered-By', 'eFarmer Clean Architecture');
@@ -89,11 +73,7 @@ app.options('*', cors(corsOptions));
     });
   }
 
-  /**
-   * Routes
-   */
   setupRoutes() {
-    // Health check
     this.app.get('/health', (req, res) => {
       res.json({
         success: true,
@@ -105,10 +85,8 @@ app.options('*', cors(corsOptions));
       });
     });
 
-    // API routes
     this.app.use('/api', apiRoutes);
 
-    // Root
     this.app.get('/', (req, res) => {
       res.json({
         success: true,
@@ -120,9 +98,6 @@ app.options('*', cors(corsOptions));
     });
   }
 
-  /**
-   * Gestion des erreurs
-   */
   setupErrorHandling() {
     this.app.use(notFoundHandler);
     this.app.use(errorHandler);
@@ -138,55 +113,28 @@ app.options('*', cors(corsOptions));
     });
   }
 
-  /**
-   * Démarrer le serveur
-   */
   start(port = process.env.PORT || 3001) {
     return new Promise((resolve, reject) => {
       try {
         const server = this.app.listen(port, () => {
           console.log(`🚀 Serveur eFarmer démarré sur le port ${port}`);
-          console.log(`📊 Environnement: ${process.env.NODE_ENV || 'development'}`);
-          console.log(`🏥 Health check: http://localhost:${port}/health`);
-          console.log(`📖 Documentation: http://localhost:${port}/api/endpoints`);
-          console.log(`🌐 API Base URL: http://localhost:${port}/api`);
           resolve(server);
         });
 
-        server.on('error', (error) => {
-          if (error.code === 'EADDRINUSE') {
-            console.error(`❌ Le port ${port} est déjà utilisé`);
-          } else {
-            console.error('❌ Erreur du serveur:', error);
-          }
-          reject(error);
-        });
+        server.on('error', (error) => reject(error));
       } catch (error) {
-        console.error('❌ Erreur lors du démarrage du serveur:', error);
         reject(error);
       }
     });
   }
 
-  /**
-   * Arrêter le serveur
-   */
   stop(server) {
     return new Promise((resolve) => {
-      if (server) {
-        server.close(() => {
-          console.log('🛑 Serveur arrêté proprement');
-          resolve();
-        });
-      } else {
-        resolve();
-      }
+      if (server) server.close(() => resolve());
+      else resolve();
     });
   }
 
-  /**
-   * Instance Express
-   */
   getApp() {
     return this.app;
   }
