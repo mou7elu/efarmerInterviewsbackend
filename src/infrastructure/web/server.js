@@ -28,8 +28,8 @@ class ExpressServer {
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // CORS CORRECTEMENT APPLIQUE
-  app.use(cors({ origin: '*', credentials: true }));
-app.options('*', cors({ origin: '*', credentials: true }));
+   this.app.use(cors({ origin: '*', credentials: true }));
+ this.app.options('*', cors({ origin: '*', credentials: true }));
 
     this.app.use(validateJsonContent);
 
