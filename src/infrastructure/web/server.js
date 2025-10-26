@@ -33,12 +33,13 @@ class ExpressServer {
     }));
 
     // CORS
-    this.app.use(cors({
-      origin: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      credentials: true
-    }));
+    // this.app.use(cors({
+    //   origin: true,
+    //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    //   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    //   credentials: true
+    // }));
+    this.app.use(cors());
 // For preflight requests
 this.app.options('*', cors());
     // Rate limiting - Désactivé pour le développement
