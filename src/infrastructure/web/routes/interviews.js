@@ -6,19 +6,21 @@ const router = express.Router();
 
 // ===========================================
 const Reponse = require('../../../../models/Reponse');
-// ROUTES POUR LES INTERVIEWS
+// ROUTES POUR LES INTERVIEWS (réponses)
 // ===========================================
 
-// GET /api/interviews
-router.get('/interviews', async (req, res) => {
+// GET /api/interviews - Récupérer toutes les réponses
+router.get('/', async (req, res) => {
   try {
+    console.log('🔍 Récupération de toutes les réponses...');
     // Nouvelle logique : retourner toutes les réponses d'interview
     const reponses = await Reponse.find();
+    console.log(`✅ Réponses récupérées: ${reponses.length}`);
     // Si la méthode toDTO existe, l'utiliser
     const reponsesDTO = reponses.map(r => typeof r.toDTO === 'function' ? r.toDTO() : r);
     res.json(reponsesDTO);
   } catch (error) {
-    console.error('Erreur lors de la récupération des réponses:', error);
+    console.error('❌ Erreur lors de la récupération des réponses:', error);
     res.status(500).json({ 
       message: 'Erreur lors de la récupération des réponses',
       error: error.message 
@@ -26,17 +28,41 @@ router.get('/interviews', async (req, res) => {
   }
 });
 
-// GET /api/interviews/:id
-router.get('/interviews/:id', async (req, res) => {
+// POST /api/interviews - Créer une nouvelle réponse
+router.post('/', async (req, res) => {
   try {
+    console.log('📝 Création d\'une nouvelle réponse...');
+    console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
+    
+    const newReponse = new Reponse(req.body);
+    const reponse = await newReponse.save();
+    
+    console.log(`✅ Réponse créée avec ID: ${reponse._id}`);
+    const reponseDTO = typeof reponse.toDTO === 'function' ? reponse.toDTO() : reponse;
+    res.status(201).json(reponseDTO);
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de la réponse:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la création de la réponse',
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/interviews/:id - Récupérer une réponse spécifique
+router.get('/:id', async (req, res) => {
+  try {
+    console.log(`🔍 Récupération de la réponse ${req.params.id}...`);
     // Nouvelle logique : récupérer une réponse d'interview par son id
     const reponse = await Reponse.findById(req.params.id);
     if (!reponse) {
+      console.log('❌ Réponse non trouvée');
       return res.status(404).json({ message: 'Réponse non trouvée' });
     }
+    console.log('✅ Réponse trouvée');
     res.json(reponse.toDTO());
   } catch (error) {
-    console.error('Erreur lors de la récupération de la réponse:', error);
+    console.error('❌ Erreur lors de la récupération de la réponse:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'ID de réponse invalide' });
     }
@@ -47,27 +73,31 @@ router.get('/interviews/:id', async (req, res) => {
   }
 });
 
-// PUT /api/interviews/:id
-router.put('/interviews/:id', async (req, res) => {
+// PUT /api/interviews/:id - Mettre à jour une réponse
+router.put('/:id', async (req, res) => {
   try {
+    console.log(`🔄 Mise à jour de la réponse ${req.params.id}...`);
     const updateData = req.body;
     
-    const interview = await Interview.findByIdAndUpdate(
+    // Mise à jour d'une réponse, pas d'une interview
+    const reponse = await Reponse.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('interviewer', 'nom email')
-     .populate('createdBy', 'nom email');
+    );
 
-    if (!interview) {
-      return res.status(404).json({ message: 'Interview non trouvée' });
+    if (!reponse) {
+      console.log('❌ Réponse non trouvée');
+      return res.status(404).json({ message: 'Réponse non trouvée' });
     }
 
-    res.json(interview);
+    console.log('✅ Réponse mise à jour');
+    const reponseDTO = typeof reponse.toDTO === 'function' ? reponse.toDTO() : reponse;
+    res.json(reponseDTO);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'interview:', error);
+    console.error('❌ Erreur lors de la mise à jour de la réponse:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'ID d\'interview invalide' });
+      return res.status(400).json({ message: 'ID de réponse invalide' });
     }
     if (error.name === 'ValidationError') {
       return res.status(400).json({ 
@@ -76,40 +106,39 @@ router.put('/interviews/:id', async (req, res) => {
       });
     }
     res.status(500).json({ 
-      message: 'Erreur lors de la mise à jour de l\'interview',
+      message: 'Erreur lors de la mise à jour de la réponse',
       error: error.message 
     });
   }
 });
 
-// DELETE /api/interviews/:id
-router.delete('/interviews/:id', async (req, res) => {
+// DELETE /api/interviews/:id - Supprimer une réponse
+router.delete('/:id', async (req, res) => {
   try {
-    const interview = await Interview.findByIdAndDelete(req.params.id);
+    console.log(`🗑️ Suppression de la réponse ${req.params.id}...`);
+    const reponse = await Reponse.findByIdAndDelete(req.params.id);
 
-    if (!interview) {
-      return res.status(404).json({ message: 'Interview non trouvée' });
+    if (!reponse) {
+      console.log('❌ Réponse non trouvée');
+      return res.status(404).json({ message: 'Réponse non trouvée' });
     }
 
-    res.json({ message: 'Interview supprimée avec succès' });
+    console.log('✅ Réponse supprimée');
+    res.json({ message: 'Réponse supprimée avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de l\'interview:', error);
+    console.error('❌ Erreur lors de la suppression de la réponse:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'ID d\'interview invalide' });
+      return res.status(400).json({ message: 'ID de réponse invalide' });
     }
     res.status(500).json({ 
-      message: 'Erreur lors de la suppression de l\'interview',
+      message: 'Erreur lors de la suppression de la réponse',
       error: error.message 
     });
   }
 });
 
-// ===========================================
-// ROUTES POUR LES QUESTIONNAIRES (compatibilité)
-// ===========================================
-
-// GET /api/questionnaires
-router.get('/questionnaires', async (req, res) => {
+// GET /api/interviews/:id/pdf - Exporter une réponse en PDF
+router.get('/:id/pdf', async (req, res) => {
   try {
     const { Questionnaire } = require('../../../../models');
     const questionnaires = await Questionnaire.find()
@@ -1219,16 +1248,14 @@ router.get('/users/:id/photo', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // ==================== ROUTE EXPORT PDF ====================
 const path = require('path');
 const fs = require('fs');
 const { fillDocxTemplate } = require('../../../../utils/docxTemplate');
 const { convertDocxToPdf } = require('../../../../utils/docxToPdf');
 
-
-router.get('/interviews/:id/pdf', async (req, res) => {
+// GET /api/interviews/:id/pdf - Exporter une réponse en PDF
+router.get('/:id/pdf', async (req, res) => {
   try {
     const reponseId = req.params.id;
     const Reponse = require('../../../../models/Reponse');
@@ -1253,7 +1280,9 @@ router.get('/interviews/:id/pdf', async (req, res) => {
       fs.unlink(pdfPath, () => {});
     });
   } catch (err) {
-  console.error('Erreur génération PDF:', err);
-  res.status(500).json({ error: 'Erreur génération PDF', details: err.message, stack: err.stack });
+    console.error('Erreur génération PDF:', err);
+    res.status(500).json({ error: 'Erreur génération PDF', details: err.message, stack: err.stack });
   }
 });
+
+module.exports = router;

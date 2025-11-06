@@ -22,7 +22,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   'https://efarmerinterviews.netlify.app',
-  'http://localhost:3000'
+  'http://localhost:3001'
 ];
 app.use(cors({
   origin: function(origin, callback) {

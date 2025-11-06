@@ -11,6 +11,7 @@ class ExpressServer {
     // Définir les origines autorisées
     this.allowedOrigins = [
       'https://efarmerinterviews.netlify.app', // Production
+      'http://localhost:3001', // Développement
       'http://localhost:3000' // Développement
     ];
 
@@ -29,8 +30,9 @@ class ExpressServer {
 
     // CORS CORRECTEMENT APPLIQUE
     const allowedOrigins = [
-      'https://efarmerinterviews.netlify.app',
-      'http://localhost:3000'
+      'https://efarmerinterviews.netlify.app', // Production
+      'http://localhost:3001', // Développement
+      'http://localhost:3000' // Développement
     ];
     this.app.use(cors({
       origin: function(origin, callback) {

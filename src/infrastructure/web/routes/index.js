@@ -4,6 +4,7 @@ const geographicRoutes = require('./geographic');
 const agriculturalRoutes = require('./agricultural');
 const questionnaireRoutes = require('./questionnaire');
 const interviewsRoutes = require('./interviews');
+const sigRoutes = require('../../../../routes/sig');
 
 const router = express.Router();
 
@@ -27,6 +28,9 @@ router.use('/questionnaire', questionnaireRoutes);
 
 // Routes d'entretiens et autres
 router.use('/', interviewsRoutes);
+
+// Route SIG (Système d'Information Géographique)
+router.use('/sig', sigRoutes);
 
 // Route de santé pour l'API
 router.get('/health', (req, res) => {

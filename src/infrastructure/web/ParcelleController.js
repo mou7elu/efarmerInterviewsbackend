@@ -95,24 +95,30 @@ class ParcelleController {
   async create(req, res) {
     try {
       const { 
+        code,
         numParcelle, 
+        producteurId,
         codeProducteur, 
+        superficie,
         surface, 
-        gpsLatitude, 
-        gpsLongitude 
+        coordonnee
       } = req.body;
 
+      // Support both old and new field names
+      const parcelleCode = code || numParcelle;
+      const parcelleSurface = superficie !== undefined ? superficie : surface;
+
       // Validation des champs requis
-      if (!numParcelle || !surface) {
+      if (!parcelleCode || parcelleSurface === undefined || parcelleSurface === null) {
         return res.status(400).json({
           success: false,
-          message: 'Numéro de parcelle et surface sont requis'
+          message: 'Code de parcelle et superficie sont requis'
         });
       }
 
       // Chercher le producteur par son code pour obtenir l'ObjectId
-      let producteurObjectId = null;
-      if (codeProducteur) {
+      let producteurObjectId = producteurId || null;
+      if (!producteurObjectId && codeProducteur) {
         const producteur = await Producteur.findOne({ Code: codeProducteur });
         console.log('Recherche producteur avec code:', codeProducteur, 'Trouvé:', producteur ? producteur._id : 'NON TROUVÉ');
         if (!producteur) {
@@ -126,14 +132,20 @@ class ParcelleController {
 
       console.log('ProducteurObjectId final:', producteurObjectId);
 
+      // Parse coordinates from coordonnee if provided (JSON string or object)
+      let coordonneeStr = null;
+      if (coordonnee) {
+        coordonneeStr = typeof coordonnee === 'string' ? coordonnee : JSON.stringify(coordonnee);
+      } else if (gpsLatitude && gpsLongitude) {
+        coordonneeStr = JSON.stringify({ latitude: parseFloat(gpsLatitude), longitude: parseFloat(gpsLongitude) });
+      }
+
       // Créer l'entité parcelle
       const parcelle = new ParcelleEntity({
-        code: numParcelle,
+        code: parcelleCode,
         producteurId: producteurObjectId,
-        superficie: parseFloat(surface),
-        coordonnee: gpsLatitude && gpsLongitude ? 
-          JSON.stringify({ latitude: parseFloat(gpsLatitude), longitude: parseFloat(gpsLongitude) }) : 
-          null
+        superficie: parseFloat(parcelleSurface),
+        coordonnee: coordonneeStr
       });
 
       const savedParcelle = await this.parcelleRepository.create(parcelle);

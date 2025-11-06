@@ -11,6 +11,10 @@ const ReponseSchema = new mongoose.Schema({
     ref: 'Questionnaire',
     required: true
   },
+   Coordonnee: {
+    type: String,
+    default: null,
+  },// Coordonnée de la reponse en geojson point
   reponses: [{
     questionId: {
       type: mongoose.Schema.Types.ObjectId,
