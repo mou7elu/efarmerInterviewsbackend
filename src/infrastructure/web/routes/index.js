@@ -26,7 +26,8 @@ router.use('/agricultural', agriculturalRoutes);
 // Routes de questionnaire (Volets, Sections, Questions)
 router.use('/questionnaire', questionnaireRoutes);
 
-// Routes d'entretiens et autres
+// Routes d'entretiens et toutes les autres routes (questionnaires, zones-interdites, etc.)
+// NOTE: Ce fichier contient TROP de routes - à refactoriser!
 router.use('/', interviewsRoutes);
 
 // Route SIG (Système d'Information Géographique)

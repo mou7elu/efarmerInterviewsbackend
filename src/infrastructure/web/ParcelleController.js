@@ -186,18 +186,28 @@ class ParcelleController {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { 
-        numParcelle, 
-        codeProducteur, 
-        surface, 
-        gpsLatitude, 
-        gpsLongitude 
-      } = req.body;
+      
+      // Accepter les clés en minuscules (mobile/API) OU en format frontend
+      const superficie = req.body.superficie ?? req.body.surface;
+      const parcelleCode = req.body.code ?? req.body.numParcelle;
+      const producteurId = req.body.producteurId ?? req.body.codeProducteur;
+      const coordonnee = req.body.coordonnee;
+      const cleProdMobi = req.body.cleProdMobi;
+      const clePlantMobi = req.body.clePlantMobi;
 
       if (!id) {
         return res.status(400).json({
           success: false,
           message: 'ID de la parcelle requis'
+        });
+      }
+
+      // Validation de l'ObjectId
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: `ID invalide: ${id}. Un ObjectId MongoDB valide est requis.`
         });
       }
 
@@ -210,22 +220,20 @@ class ParcelleController {
         });
       }
 
-      // Mettre à jour les propriétés
-      let updatedParcelle = existingParcelle;
-      
-      if (surface !== undefined) {
-        updatedParcelle = updatedParcelle.changerSuperficie(parseFloat(surface));
-      }
+      // Créer une nouvelle entité avec les données mises à jour
+      const updatedData = {
+        id: existingParcelle.id,
+        superficie: superficie !== undefined ? parseFloat(superficie) : existingParcelle.superficie,
+        coordonnee: coordonnee !== undefined ? coordonnee : existingParcelle.coordonnee?.value,
+        producteurId: producteurId !== undefined ? producteurId : existingParcelle.producteurId,
+        code: parcelleCode !== undefined ? parcelleCode : existingParcelle.code,
+        cleProdMobi: cleProdMobi !== undefined ? cleProdMobi : existingParcelle.cleProdMobi,
+        clePlantMobi: clePlantMobi !== undefined ? clePlantMobi : existingParcelle.clePlantMobi,
+        createdAt: existingParcelle.createdAt,
+        updatedAt: new Date()
+      };
 
-      if (gpsLatitude !== undefined || gpsLongitude !== undefined) {
-        const coordStr = gpsLatitude && gpsLongitude ? JSON.stringify({ latitude: parseFloat(gpsLatitude), longitude: parseFloat(gpsLongitude) }) : null;
-        updatedParcelle = updatedParcelle.changerCoordonnees(coordStr);
-      }
-
-      if (codeProducteur !== undefined) {
-        updatedParcelle = updatedParcelle.changerProducteur(codeProducteur);
-      }
-
+      const updatedParcelle = new (require('../../domain/entities/ParcelleEntity').ParcelleEntity)(updatedData);
       const savedParcelle = await this.parcelleRepository.update(id, updatedParcelle);
 
       res.status(200).json({

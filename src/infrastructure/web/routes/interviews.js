@@ -1,23 +1,37 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { Interview } = require('../../../../models');
+const Reponse = require('../../../../models/Reponse');
 
 const router = express.Router();
 
+// ==================== IMPORTS POUR EXPORT PDF ====================
+const path = require('path');
+const fs = require('fs');
+const { fillDocxTemplate } = require('../../../../utils/docxTemplate');
+const { convertDocxToPdf } = require('../../../../utils/docxToPdf');
+
 // ===========================================
-const Reponse = require('../../../../models/Reponse');
-// ROUTES POUR LES INTERVIEWS (réponses)
+// ROUTES SPÉCIFIQUES (AVANT LES ROUTES GÉNÉRIQUES /:id)
+// ===========================================
+
+// ===========================================
+// ROUTES INTERVIEWS (/interviews)
 // ===========================================
 
 // GET /api/interviews - Récupérer toutes les réponses
-router.get('/', async (req, res) => {
+router.get('/interviews', async (req, res) => {
   try {
+    console.log(`🔍 GET /interviews - URL complète: ${req.originalUrl}, Path: ${req.path}`);
     console.log('🔍 Récupération de toutes les réponses...');
-    // Nouvelle logique : retourner toutes les réponses d'interview
     const reponses = await Reponse.find();
     console.log(`✅ Réponses récupérées: ${reponses.length}`);
-    // Si la méthode toDTO existe, l'utiliser
     const reponsesDTO = reponses.map(r => typeof r.toDTO === 'function' ? r.toDTO() : r);
+    console.log('📤 Type de données renvoyées:', Array.isArray(reponsesDTO) ? 'Array' : typeof reponsesDTO);
+    console.log('📤 Nombre d\'éléments:', reponsesDTO.length);
+    if (reponsesDTO.length > 0) {
+      console.log('📤 Premier élément:', JSON.stringify(reponsesDTO[0]).substring(0, 200));
+    }
     res.json(reponsesDTO);
   } catch (error) {
     console.error('❌ Erreur lors de la récupération des réponses:', error);
@@ -29,7 +43,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/interviews - Créer une nouvelle réponse
-router.post('/', async (req, res) => {
+router.post('/interviews', async (req, res) => {
   try {
     console.log('📝 Création d\'une nouvelle réponse...');
     console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
@@ -49,11 +63,42 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/interviews/:id - Récupérer une réponse spécifique
-router.get('/:id', async (req, res) => {
+// GET /api/interviews/:id/pdf - Exporter une réponse en PDF
+router.get('/interviews/:id/pdf', async (req, res) => {
   try {
+    const reponseId = req.params.id;
+    const reponse = await Reponse.findById(reponseId).lean();
+    if (!reponse) {
+      return res.status(404).json({ error: 'Reponse not found' });
+    }
+
+    // Remplir le template DOCX
+    const templatePath = path.join(__dirname, '../../../../Questionnaire_IEEA.docx');
+    const filledDocxPath = path.join(__dirname, `../../../../tmp/reponse_${reponseId}.docx`);
+    await fillDocxTemplate(templatePath, filledDocxPath, reponse);
+
+    // Convertir en PDF
+    const pdfPath = path.join(__dirname, `../../../../tmp/reponse_${reponseId}.pdf`);
+    await convertDocxToPdf(filledDocxPath, pdfPath);
+
+    // Envoyer le PDF
+    res.download(pdfPath, `entretien_${reponseId}.pdf`, (err) => {
+      // Nettoyage des fichiers temporaires
+      fs.unlink(filledDocxPath, () => {});
+      fs.unlink(pdfPath, () => {});
+    });
+  } catch (err) {
+    console.error('Erreur génération PDF:', err);
+    res.status(500).json({ error: 'Erreur génération PDF', details: err.message, stack: err.stack });
+  }
+});
+
+// GET /api/interviews/:id - Récupérer une réponse spécifique
+router.get('/interviews/:id', async (req, res) => {
+  try {
+    console.log(`🔍 GET /interviews/:id - URL complète: ${req.originalUrl}, Path: ${req.path}, ID: ${req.params.id}`);
     console.log(`🔍 Récupération de la réponse ${req.params.id}...`);
-    // Nouvelle logique : récupérer une réponse d'interview par son id
+    
     const reponse = await Reponse.findById(req.params.id);
     if (!reponse) {
       console.log('❌ Réponse non trouvée');
@@ -74,12 +119,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /api/interviews/:id - Mettre à jour une réponse
-router.put('/:id', async (req, res) => {
+router.put('/interviews/:id', async (req, res) => {
   try {
     console.log(`🔄 Mise à jour de la réponse ${req.params.id}...`);
     const updateData = req.body;
     
-    // Mise à jour d'une réponse, pas d'une interview
     const reponse = await Reponse.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -113,7 +157,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/interviews/:id - Supprimer une réponse
-router.delete('/:id', async (req, res) => {
+router.delete('/interviews/:id', async (req, res) => {
   try {
     console.log(`🗑️ Suppression de la réponse ${req.params.id}...`);
     const reponse = await Reponse.findByIdAndDelete(req.params.id);
@@ -137,8 +181,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// GET /api/interviews/:id/pdf - Exporter une réponse en PDF
-router.get('/:id/pdf', async (req, res) => {
+// ===========================================
+// ROUTES POUR LES QUESTIONNAIRES (compatibilité)
+// ===========================================
+
+// GET /api/questionnaires - Récupérer tous les questionnaires
+router.get('/questionnaires', async (req, res) => {
   try {
     const { Questionnaire } = require('../../../../models');
     const questionnaires = await Questionnaire.find()
@@ -1248,17 +1296,58 @@ router.get('/users/:id/photo', async (req, res) => {
   }
 });
 
-// ==================== ROUTE EXPORT PDF ====================
-const path = require('path');
-const fs = require('fs');
-const { fillDocxTemplate } = require('../../../../utils/docxTemplate');
-const { convertDocxToPdf } = require('../../../../utils/docxToPdf');
+// ===========================================
+// ROUTES GÉNÉRIQUES INTERVIEWS (À LA FIN!)
+// ===========================================
+
+// GET /api/interviews - Récupérer toutes les réponses
+router.get('/', async (req, res) => {
+  try {
+    console.log(`🔍 GET / - URL complète: ${req.originalUrl}, Path: ${req.path}`);
+    console.log('🔍 Récupération de toutes les réponses...');
+    const reponses = await Reponse.find();
+    console.log(`✅ Réponses récupérées: ${reponses.length}`);
+    const reponsesDTO = reponses.map(r => typeof r.toDTO === 'function' ? r.toDTO() : r);
+    console.log('📤 Type de données renvoyées:', Array.isArray(reponsesDTO) ? 'Array' : typeof reponsesDTO);
+    console.log('📤 Nombre d\'éléments:', reponsesDTO.length);
+    if (reponsesDTO.length > 0) {
+      console.log('📤 Premier élément:', JSON.stringify(reponsesDTO[0]).substring(0, 200));
+    }
+    res.json(reponsesDTO);
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des réponses:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des réponses',
+      error: error.message 
+    });
+  }
+});
+
+// POST /api/interviews - Créer une nouvelle réponse
+router.post('/', async (req, res) => {
+  try {
+    console.log('📝 Création d\'une nouvelle réponse...');
+    console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
+    
+    const newReponse = new Reponse(req.body);
+    const reponse = await newReponse.save();
+    
+    console.log(`✅ Réponse créée avec ID: ${reponse._id}`);
+    const reponseDTO = typeof reponse.toDTO === 'function' ? reponse.toDTO() : reponse;
+    res.status(201).json(reponseDTO);
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de la réponse:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la création de la réponse',
+      error: error.message 
+    });
+  }
+});
 
 // GET /api/interviews/:id/pdf - Exporter une réponse en PDF
 router.get('/:id/pdf', async (req, res) => {
   try {
     const reponseId = req.params.id;
-    const Reponse = require('../../../../models/Reponse');
     const reponse = await Reponse.findById(reponseId).lean();
     if (!reponse) {
       return res.status(404).json({ error: 'Reponse not found' });
@@ -1282,6 +1371,103 @@ router.get('/:id/pdf', async (req, res) => {
   } catch (err) {
     console.error('Erreur génération PDF:', err);
     res.status(500).json({ error: 'Erreur génération PDF', details: err.message, stack: err.stack });
+  }
+});
+
+// GET /api/interviews/:id - Récupérer une réponse spécifique
+router.get('/:id', async (req, res) => {
+  try {
+    console.log(`🔍 GET /:id - URL complète: ${req.originalUrl}, Path: ${req.path}, ID: ${req.params.id}`);
+    console.log(`🔍 Récupération de la réponse ${req.params.id}...`);
+    
+    // Validation : rejeter si l'ID est un mot-clé au lieu d'un ObjectId
+    if (['interviews', 'questionnaires', 'zones-interdites', 'nationalites', 'niveaux-scolaires', 'pieces', 'users'].includes(req.params.id)) {
+      console.log(`⚠️ Requête invalide - '${req.params.id}' n'est pas un ID valide`);
+      return res.status(400).json({ 
+        message: 'Route invalide',
+        hint: `Utilisez GET /api/${req.params.id} au lieu de GET /api/interviews/${req.params.id}`
+      });
+    }
+    
+    const reponse = await Reponse.findById(req.params.id);
+    if (!reponse) {
+      console.log('❌ Réponse non trouvée');
+      return res.status(404).json({ message: 'Réponse non trouvée' });
+    }
+    console.log('✅ Réponse trouvée');
+    res.json(reponse.toDTO());
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération de la réponse:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'ID de réponse invalide' });
+    }
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération de la réponse',
+      error: error.message 
+    });
+  }
+});
+
+// PUT /api/interviews/:id - Mettre à jour une réponse
+router.put('/:id', async (req, res) => {
+  try {
+    console.log(`🔄 Mise à jour de la réponse ${req.params.id}...`);
+    const updateData = req.body;
+    
+    const reponse = await Reponse.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!reponse) {
+      console.log('❌ Réponse non trouvée');
+      return res.status(404).json({ message: 'Réponse non trouvée' });
+    }
+
+    console.log('✅ Réponse mise à jour');
+    const reponseDTO = typeof reponse.toDTO === 'function' ? reponse.toDTO() : reponse;
+    res.json(reponseDTO);
+  } catch (error) {
+    console.error('❌ Erreur lors de la mise à jour de la réponse:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'ID de réponse invalide' });
+    }
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Données invalides',
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    res.status(500).json({ 
+      message: 'Erreur lors de la mise à jour de la réponse',
+      error: error.message 
+    });
+  }
+});
+
+// DELETE /api/interviews/:id - Supprimer une réponse
+router.delete('/:id', async (req, res) => {
+  try {
+    console.log(`🗑️ Suppression de la réponse ${req.params.id}...`);
+    const reponse = await Reponse.findByIdAndDelete(req.params.id);
+
+    if (!reponse) {
+      console.log('❌ Réponse non trouvée');
+      return res.status(404).json({ message: 'Réponse non trouvée' });
+    }
+
+    console.log('✅ Réponse supprimée');
+    res.json({ message: 'Réponse supprimée avec succès' });
+  } catch (error) {
+    console.error('❌ Erreur lors de la suppression de la réponse:', error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'ID de réponse invalide' });
+    }
+    res.status(500).json({ 
+      message: 'Erreur lors de la suppression de la réponse',
+      error: error.message 
+    });
   }
 });
 

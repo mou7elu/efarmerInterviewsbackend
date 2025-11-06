@@ -2,6 +2,7 @@ const { IParcelleRepository } = require('../../domain/repositories/IParcelleRepo
 const { ParcelleEntity } = require('../../domain/entities/ParcelleEntity');
 const { NotFoundError } = require('../../shared/errors/NotFoundError');
 const { DuplicateError } = require('../../shared/errors/DuplicateError');
+const mongoose = require('mongoose');
 
 /**
  * Implémentation MongoDB du repository Parcelle
@@ -11,6 +12,13 @@ class MongoParcelleRepository extends IParcelleRepository {
     super();
     this.parcelleModel = require('../../../models/Parcelle');
     this.producteurModel = require('../../../models/Producteur');
+  }
+
+  /**
+   * Vérifie si une chaîne est un ObjectId MongoDB valide
+   */
+  isValidObjectId(id) {
+    return mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
   }
 
   async create(entity) {
@@ -34,6 +42,12 @@ class MongoParcelleRepository extends IParcelleRepository {
   }
 
   async findById(id) {
+    // Si l'ID n'est pas un ObjectId valide, retourner null
+    if (!this.isValidObjectId(id)) {
+      console.log(`⚠️ ID "${id}" n'est pas un ObjectId valide`);
+      return null;
+    }
+    
     const doc = await this.parcelleModel.findById(id);
     return doc ? ParcelleEntity.fromPersistence(doc.toObject()) : null;
   }
@@ -44,6 +58,11 @@ class MongoParcelleRepository extends IParcelleRepository {
   }
 
   async update(id, entity) {
+    // Si l'ID n'est pas un ObjectId valide, retourner une erreur claire
+    if (!this.isValidObjectId(id)) {
+      throw new NotFoundError(`ID invalide: "${id}" n'est pas un ObjectId MongoDB valide. Utilisez un ObjectId de 24 caractères hexadécimaux.`);
+    }
+    
     // Vérifier l'existence du producteur
     if (entity.codeProducteur) {
       const producteurExists = await this.producteurModel.exists({ Code: entity.codeProducteur });

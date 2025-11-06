@@ -170,30 +170,26 @@ class ProducteurController {
         });
       }
 
-      // Mettre à jour les propriétés
-      let updatedProducteur = existingProducteur;
-      
-      if (nom && prenom) {
-        updatedProducteur = updatedProducteur.updateNom(nom, prenom);
-      }
-      
-      if (telephone1 !== undefined || telephone2 !== undefined) {
-        updatedProducteur = updatedProducteur.updateContact(telephone1, telephone2);
-      }
-      
-      if (genre !== undefined) {
-        updatedProducteur = updatedProducteur.updateGenre(genre);
-      }
-      
-      if (dateNaissance !== undefined) {
-        updatedProducteur = updatedProducteur.updateDateNaissance(
-          dateNaissance ? new Date(dateNaissance) : null
-        );
-      }
-      
-      if (sommeil !== undefined) {
-        updatedProducteur = updatedProducteur.updateStatut(sommeil);
-      }
+      // Créer une nouvelle entité avec les modifications
+      // Utiliser les valeurs du body ou garder les anciennes valeurs
+      const updatedProducteur = new ProducteurEntity({
+        id: existingProducteur.id,
+        code: code || existingProducteur.code,
+        nom: nom !== undefined ? nom : existingProducteur.nom?.value,
+        prenom: prenom !== undefined ? prenom : existingProducteur.prenom?.value,
+        telephone1: telephone1 !== undefined ? telephone1 : existingProducteur.telephone1,
+        telephone2: telephone2 !== undefined ? telephone2 : existingProducteur.telephone2,
+        dateNaissance: dateNaissance !== undefined ? (dateNaissance ? new Date(dateNaissance) : null) : existingProducteur.dateNaissance,
+        lieuNaissance: existingProducteur.lieuNaissance?.value,
+        genre: genre !== undefined ? genre : existingProducteur.genre,
+        photo: existingProducteur.photo,
+        signature: existingProducteur.signature,
+        dateSigne: existingProducteur.dateSigne,
+        cleProdMobi: existingProducteur.cleProdMobi,
+        sommeil: sommeil !== undefined ? sommeil : existingProducteur.sommeil,
+        createdAt: existingProducteur.createdAt,
+        updatedAt: new Date()
+      });
 
       const savedProducteur = await this.producteurRepository.update(id, updatedProducteur);
 

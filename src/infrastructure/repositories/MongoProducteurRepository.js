@@ -2,6 +2,7 @@ const { IProducteurRepository } = require('../../domain/repositories/IProducteur
 const { ProducteurEntity } = require('../../domain/entities/ProducteurEntity');
 const { NotFoundError } = require('../../shared/errors/NotFoundError');
 const { DuplicateError } = require('../../shared/errors/DuplicateError');
+const mongoose = require('mongoose');
 
 /**
  * Implémentation MongoDB du repository Producteur
@@ -10,6 +11,13 @@ class MongoProducteurRepository extends IProducteurRepository {
   constructor() {
     super();
     this.producteurModel = require('../../../models/Producteur');
+  }
+
+  /**
+   * Vérifie si une chaîne est un ObjectId MongoDB valide
+   */
+  isValidObjectId(id) {
+    return mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
   }
 
   async create(entity) {
@@ -31,6 +39,12 @@ class MongoProducteurRepository extends IProducteurRepository {
   }
 
   async findById(id) {
+    // Si l'ID n'est pas un ObjectId valide, essayer de chercher par code
+    if (!this.isValidObjectId(id)) {
+      console.log(`⚠️ ID "${id}" n'est pas un ObjectId valide, recherche par code...`);
+      return await this.findByCode(id);
+    }
+    
     const doc = await this.producteurModel.findById(id);
     return doc ? ProducteurEntity.fromPersistence(doc.toObject()) : null;
   }
@@ -41,6 +55,11 @@ class MongoProducteurRepository extends IProducteurRepository {
   }
 
   async update(id, entity) {
+    // Si l'ID n'est pas un ObjectId valide, retourner une erreur claire
+    if (!this.isValidObjectId(id)) {
+      throw new NotFoundError(`ID invalide: "${id}" n'est pas un ObjectId MongoDB valide. Utilisez un ObjectId de 24 caractères hexadécimaux.`);
+    }
+    
     // Vérifier l'unicité du code (exclure l'ID actuel)
     const existing = await this.producteurModel.findOne({
       Code: entity.code,
