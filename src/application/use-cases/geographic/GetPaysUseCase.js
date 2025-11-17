@@ -1,28 +1,23 @@
-const BaseUseCase = require('../BaseUseCase');
-const { PaysRepository } = require('../../../infrastructure/repositories/PaysRepository');
+const Pays = require('../../../../models/Pays');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
-const { ValidationError } = require('../../../shared/errors/ValidationError');
 
 /**
- * Use Case pour obtenir un pays par ID
+ * Use Case: Obtenir un pays par son ID
  */
-class GetPaysUseCase extends BaseUseCase {
-  constructor() {
-    super();
-    this.paysRepository = new PaysRepository();
-  }
-
+class GetPaysUseCase {
+  /**
+   * Exécute le use case
+   * @param {string} id - ID du pays
+   * @returns {Promise<Object>} Le pays trouvé
+   */
   async execute(id) {
-    if (!id) {
-      throw new ValidationError('L\'ID du pays est requis');
-    }
+    const pays = await Pays.findById(id);
 
-    const pays = await this.paysRepository.findById(id);
     if (!pays) {
-      throw new NotFoundError('Pays non trouvé');
+      throw new NotFoundError(`Pays avec l'ID ${id} non trouvé`);
     }
 
-    return pays;
+    return pays.toDTO();
   }
 }
 

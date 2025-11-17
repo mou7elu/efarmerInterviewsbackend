@@ -5,6 +5,11 @@ const districtSchema = new mongoose.Schema({
     type: String,
     required: true,
   },// Libellé du district
+   Cod_district: {
+    type: String,
+    required: true,
+    unique: true,
+  },// Code du district
  // Coordonnée du district geojson polygon
   Sommeil: {
     type: Boolean,
@@ -24,6 +29,7 @@ districtSchema.methods.toDTO = function() {
   return {
     id: this._id,
     Lib_district: this.Lib_district,
+    Cod_district: this.Cod_district,
     Sommeil: this.Sommeil,
     PaysId: this.PaysId,
     createdAt: this.createdAt,

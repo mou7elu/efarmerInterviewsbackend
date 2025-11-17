@@ -5,6 +5,10 @@ const DepartementSchema = new mongoose.Schema({
     type: String,
     required: true,
   },// Libellé du département
+  Cod_departement: {
+    type: String,
+    required: true,
+    unique: true,},// Code du département
     RegionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Region',
@@ -19,6 +23,7 @@ DepartementSchema.methods.toDTO = function() {
   return {
     id: this._id,
     Lib_Departement: this.Lib_Departement,
+    Cod_departement: this.Cod_departement,
     RegionId: this.RegionId,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt

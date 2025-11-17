@@ -1,34 +1,41 @@
-const BaseUseCase = require('../BaseUseCase');
-const { PaysEntity } = require('../../../domain/entities/PaysEntity');
-const { PaysRepository } = require('../../../infrastructure/repositories/PaysRepository');
+const Pays = require('../../../../models/Pays');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
-const { DuplicateError } = require('../../../shared/errors/DuplicateError');
 
 /**
- * Use Case pour créer un pays
+ * Use Case: Créer un nouveau pays
  */
-class CreatePaysUseCase extends BaseUseCase {
-  constructor() {
-    super();
-    this.paysRepository = new PaysRepository();
-  }
-
-  async execute(input) {
-    this.validateInput(input, ['libPays']);
-
-    // Vérifier l'unicité du libellé
-    const existing = await this.paysRepository.findByLibelle(input.libPays);
-    if (existing) {
-      throw new DuplicateError('Un pays avec ce libellé existe déjà');
+class CreatePaysUseCase {
+  /**
+   * Exécute le use case
+   * @param {Object} data - Données du pays à créer
+   * @returns {Promise<Object>} Le pays créé
+   */
+  async execute(data) {
+    // Validation des données
+    if (!data.Lib_pays || data.Lib_pays.trim() === '') {
+      throw new ValidationError('Le libellé du pays est requis');
     }
 
-    const paysEntity = new PaysEntity({
-      libPays: input.libPays,
-      coordonnee: input.coordonnee,
-      sommeil: input.sommeil || false
+    // Vérifier si le pays existe déjà
+    const existingPays = await Pays.findOne({ 
+      Lib_pays: { $regex: new RegExp(`^${data.Lib_pays.trim()}$`, 'i') } 
     });
 
-    return await this.paysRepository.create(paysEntity);
+    if (existingPays) {
+      throw new ValidationError(`Le pays "${data.Lib_pays}" existe déjà`);
+    }
+
+    // Créer le pays
+    const pays = new Pays({
+      Lib_pays: data.Lib_pays.trim(),
+      Coordonnee: data.Coordonnee || null,
+      Indicatif: data.Indicatif || null,
+      Sommeil: data.Sommeil || false
+    });
+
+    await pays.save();
+
+    return pays.toDTO();
   }
 }
 

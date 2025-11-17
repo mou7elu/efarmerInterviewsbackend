@@ -68,14 +68,15 @@ class PaysController {
 
       // Validation des paramètres
       const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
+      const limitNum = limit ? parseInt(limit) : 0; // 0 = pas de limite
       
       if (isNaN(pageNum) || pageNum < 1) {
         throw new ValidationError('Le numéro de page doit être un entier positif');
       }
       
-      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-        throw new ValidationError('La limite doit être entre 1 et 100');
+      // Enlever la contrainte de limite maximale
+      if (limit && (isNaN(limitNum) || limitNum < 1)) {
+        throw new ValidationError('La limite doit être un entier positif');
       }
 
       const filters = {
@@ -94,7 +95,7 @@ class PaysController {
           page: result.page,
           pages: result.pages,
           total: result.total,
-          limit: limitNum
+          limit: limitNum || result.total // Si pas de limite, retourner le total
         }
       });
     } catch (error) {

@@ -1,8 +1,10 @@
-const { CreateDepartementUseCase } = require('../../../application/use-cases/geographic/CreateDepartementUseCase');
-const { GetDepartementUseCase } = require('../../../application/use-cases/geographic/GetDepartementUseCase');
-const { UpdateDepartementUseCase } = require('../../../application/use-cases/geographic/UpdateDepartementUseCase');
-const { DeleteDepartementUseCase } = require('../../../application/use-cases/geographic/DeleteDepartementUseCase');
-const { GetAllDepartementsUseCase } = require('../../../application/use-cases/geographic/GetAllDepartementsUseCase');
+const { 
+  CreateDepartementUseCase,
+  GetDepartementUseCase,
+  UpdateDepartementUseCase,
+  DeleteDepartementUseCase,
+  GetAllDepartementsUseCase
+} = require('../../../application/use-cases/geographic/DepartementUseCases');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 
 /**
@@ -69,14 +71,15 @@ class DepartementController {
 
       // Validation des paramètres
       const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
+      const limitNum = limit ? parseInt(limit) : 0; // 0 = pas de limite
       
       if (isNaN(pageNum) || pageNum < 1) {
         throw new ValidationError('Le numéro de page doit être un entier positif');
       }
       
-      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-        throw new ValidationError('La limite doit être entre 1 et 100');
+      // Enlever la contrainte de limite maximale
+      if (limit && (isNaN(limitNum) || limitNum < 1)) {
+        throw new ValidationError('La limite doit être un entier positif');
       }
 
       const filters = {

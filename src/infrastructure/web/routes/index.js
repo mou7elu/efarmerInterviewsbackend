@@ -1,9 +1,15 @@
 const express = require('express');
 const authRoutes = require('./auth');
 const geographicRoutes = require('./geographic');
-const agriculturalRoutes = require('./agricultural');
-const questionnaireRoutes = require('./questionnaire');
-const interviewsRoutes = require('./interviews');
+// Import des nouvelles routes depuis backend/routes
+const usersRoutes = require('../../../../routes/users');
+const administrativeRoutes = require('../../../../routes/administrative');
+const referenceRoutes = require('../../../../routes/reference');
+const agriculturalRoutes = require('../../../../routes/agricultural');
+const zonesInterditesRoutes = require('../../../../routes/zones-interdites');
+// NOTE: Routes questionnaire et interviews désactivées - les models correspondants ont été supprimés
+// const questionnaireRoutes = require('./questionnaire');
+// const interviewsRoutes = require('./interviews');
 const sigRoutes = require('../../../../routes/sig');
 
 const router = express.Router();
@@ -20,15 +26,28 @@ router.use('/auth', authRoutes);
 // Routes géographiques (Pays, Districts, Régions)
 router.use('/geographic', geographicRoutes);
 
-// Routes agricoles (Producteurs, Parcelles)
+// Routes utilisateurs et profils
+router.use('/users', usersRoutes);
+
+// Routes agricoles (Producteurs, Parcelles) - NOUVELLES ROUTES
 router.use('/agricultural', agriculturalRoutes);
 
-// Routes de questionnaire (Volets, Sections, Questions)
-router.use('/questionnaire', questionnaireRoutes);
+// Routes de référence (Professions, Nationalités, Niveaux scolaires, Pièces) - NOUVELLES ROUTES
+router.use('/reference', referenceRoutes);
 
-// Routes d'entretiens et toutes les autres routes (questionnaires, zones-interdites, etc.)
-// NOTE: Ce fichier contient TROP de routes - à refactoriser!
-router.use('/', interviewsRoutes);
+// Routes administratives (Sous-préfectures, Secteurs, Zones, Localités, Ménages) - NOUVELLES ROUTES
+router.use('/administrative', administrativeRoutes);
+
+// Routes zones interdites - NOUVELLES ROUTES
+router.use('/zones-interdites', zonesInterditesRoutes);
+
+// DÉSACTIVÉ: Routes de questionnaire (Volets, Sections, Questions)
+// Les models Questionnaire, Volet, Section, Question ont été supprimés
+// router.use('/questionnaire', questionnaireRoutes);
+
+// DÉSACTIVÉ: Routes d'entretiens et autres routes obsolètes
+// Les models Interview, Reponse ont été supprimés
+// router.use('/', interviewsRoutes);
 
 // Route SIG (Système d'Information Géographique)
 router.use('/sig', sigRoutes);
@@ -50,6 +69,11 @@ router.get('/endpoints', (req, res) => {
     message: 'Documentation des endpoints disponibles',
     endpoints: {
       health: 'GET /api/health',
+      auth: {
+        login: 'POST /api/auth/login',
+        register: 'POST /api/auth/register',
+        me: 'GET /api/auth/me'
+      },
       geographic: {
         pays: {
           list: 'GET /api/geographic/pays',
@@ -72,6 +96,14 @@ router.get('/endpoints', (req, res) => {
           search: 'GET /api/geographic/districts/search/:term',
           byCountry: 'GET /api/geographic/pays/:paysId/districts',
           countByCountry: 'GET /api/geographic/pays/:paysId/districts/count'
+        },
+        regions: {
+          list: 'GET /api/geographic/regions',
+          create: 'POST /api/geographic/regions',
+          get: 'GET /api/geographic/regions/:id',
+          update: 'PUT /api/geographic/regions/:id',
+          delete: 'DELETE /api/geographic/regions/:id',
+          byDistrict: 'GET /api/geographic/districts/:districtId/regions'
         },
         villages: {
           list: 'GET /api/geographic/villages',
@@ -108,82 +140,90 @@ router.get('/endpoints', (req, res) => {
           statistics: 'GET /api/agricultural/parcelles/statistics'
         }
       },
-      questionnaire: {
-        volets: {
-          list: 'GET /api/questionnaire/volets',
-          create: 'POST /api/questionnaire/volets',
-          get: 'GET /api/questionnaire/volets/:id',
-          update: 'PUT /api/questionnaire/volets/:id',
-          delete: 'DELETE /api/questionnaire/volets/:id'
-        },
-        sections: {
-          list: 'GET /api/questionnaire/sections',
-          create: 'POST /api/questionnaire/sections',
-          get: 'GET /api/questionnaire/sections/:id',
-          update: 'PUT /api/questionnaire/sections/:id',
-          delete: 'DELETE /api/questionnaire/sections/:id',
-          byVolet: 'GET /api/questionnaire/sections/volet/:voletId'
-        },
-        questions: {
-          list: 'GET /api/questionnaire/questions',
-          create: 'POST /api/questionnaire/questions',
-          get: 'GET /api/questionnaire/questions/:id',
-          update: 'PUT /api/questionnaire/questions/:id',
-          delete: 'DELETE /api/questionnaire/questions/:id',
-          bySection: 'GET /api/questionnaire/questions/section/:sectionId',
-          byVolet: 'GET /api/questionnaire/questions/volet/:voletId'
-        }
-      },
-      interviews: {
-        list: 'GET /api/interviews',
-        create: 'POST /api/interviews',
-        get: 'GET /api/interviews/:id',
-        update: 'PUT /api/interviews/:id',
-        delete: 'DELETE /api/interviews/:id'
-          ,
-          exportPdf: 'GET /api/interviews/:id/pdf'
-      },
-      questionnaires: {
-        list: 'GET /api/questionnaires',
-        get: 'GET /api/questionnaires/:id'
-      },
-      other: {
-        zonesInterdites: {
-          list: 'GET /api/zones-interdites',
-          get: 'GET /api/zones-interdites/:id',
-          create: 'POST /api/zones-interdites',
-          update: 'PUT /api/zones-interdites/:id',
-          delete: 'DELETE /api/zones-interdites/:id'
+      reference: {
+        professions: {
+          list: 'GET /api/reference/professions',
+          get: 'GET /api/reference/professions/:id',
+          create: 'POST /api/reference/professions',
+          update: 'PUT /api/reference/professions/:id',
+          delete: 'DELETE /api/reference/professions/:id'
         },
         nationalites: {
-          list: 'GET /api/nationalites',
-          get: 'GET /api/nationalites/:id',
-          create: 'POST /api/nationalites',
-          update: 'PUT /api/nationalites/:id',
-          delete: 'DELETE /api/nationalites/:id'
+          list: 'GET /api/reference/nationalites',
+          get: 'GET /api/reference/nationalites/:id',
+          create: 'POST /api/reference/nationalites',
+          update: 'PUT /api/reference/nationalites/:id',
+          delete: 'DELETE /api/reference/nationalites/:id'
         },
         niveauxScolaires: {
-          list: 'GET /api/niveaux-scolaires',
-          get: 'GET /api/niveaux-scolaires/:id',
-          create: 'POST /api/niveaux-scolaires',
-          update: 'PUT /api/niveaux-scolaires/:id',
-          delete: 'DELETE /api/niveaux-scolaires/:id'
+          list: 'GET /api/reference/niveaux-scolaires',
+          get: 'GET /api/reference/niveaux-scolaires/:id',
+          create: 'POST /api/reference/niveaux-scolaires',
+          update: 'PUT /api/reference/niveaux-scolaires/:id',
+          delete: 'DELETE /api/reference/niveaux-scolaires/:id'
         },
         pieces: {
-          list: 'GET /api/pieces',
-          get: 'GET /api/pieces/:id',
-          create: 'POST /api/pieces',
-          update: 'PUT /api/pieces/:id',
-          delete: 'DELETE /api/pieces/:id'
-        },
-        users: {
-          list: 'GET /api/users',
-          get: 'GET /api/users/:id',
-          create: 'POST /api/users',
-          update: 'PUT /api/users/:id',
-          delete: 'DELETE /api/users/:id'
+          list: 'GET /api/reference/pieces',
+          get: 'GET /api/reference/pieces/:id',
+          create: 'POST /api/reference/pieces',
+          update: 'PUT /api/reference/pieces/:id',
+          delete: 'DELETE /api/reference/pieces/:id'
         }
+      },
+      administrative: {
+        departements: {
+          list: 'GET /api/administrative/departements',
+          get: 'GET /api/administrative/departements/:id',
+          create: 'POST /api/administrative/departements',
+          update: 'PUT /api/administrative/departements/:id',
+          delete: 'DELETE /api/administrative/departements/:id',
+          byRegion: 'GET /api/administrative/regions/:regionId/departements'
+        },
+        sousprefectures: {
+          list: 'GET /api/administrative/sousprefectures',
+          get: 'GET /api/administrative/sousprefectures/:id',
+          create: 'POST /api/administrative/sousprefectures',
+          update: 'PUT /api/administrative/sousprefectures/:id',
+          delete: 'DELETE /api/administrative/sousprefectures/:id',
+          byDepartement: 'GET /api/administrative/departements/:departementId/sousprefectures'
+        },
+        secteursAdministratifs: {
+          list: 'GET /api/administrative/secteurs-administratifs',
+          get: 'GET /api/administrative/secteurs-administratifs/:id',
+          create: 'POST /api/administrative/secteurs-administratifs',
+          update: 'PUT /api/administrative/secteurs-administratifs/:id',
+          delete: 'DELETE /api/administrative/secteurs-administratifs/:id',
+          bySousprefecture: 'GET /api/administrative/sousprefectures/:sousprefId/secteurs-administratifs'
+        },
+        zonesDenombrement: {
+          list: 'GET /api/administrative/zones-denombrement',
+          get: 'GET /api/administrative/zones-denombrement/:id',
+          create: 'POST /api/administrative/zones-denombrement',
+          update: 'PUT /api/administrative/zones-denombrement/:id',
+          delete: 'DELETE /api/administrative/zones-denombrement/:id',
+          bySecteur: 'GET /api/administrative/secteurs-administratifs/:secteurId/zones-denombrement'
+        },
+        localites: {
+          list: 'GET /api/administrative/localites',
+          get: 'GET /api/administrative/localites/:id',
+          create: 'POST /api/administrative/localites',
+          update: 'PUT /api/administrative/localites/:id',
+          delete: 'DELETE /api/administrative/localites/:id',
+          byVillage: 'GET /api/administrative/villages/:villageId/localites'
+        },
+        menages: {
+          list: 'GET /api/administrative/menages',
+          get: 'GET /api/administrative/menages/:id',
+          create: 'POST /api/administrative/menages',
+          update: 'PUT /api/administrative/menages/:id',
+          delete: 'DELETE /api/administrative/menages/:id'
+        }
+      },
+      sig: {
+        hierarchy: 'GET /api/sig'
       }
+      // NOTE: Les endpoints questionnaire et interviews ont été désactivés
+      // car les models correspondants (Questionnaire, Volet, Section, Question, Interview, Reponse) ont été supprimés
     }
   });
 });

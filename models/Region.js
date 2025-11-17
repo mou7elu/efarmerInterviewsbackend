@@ -5,6 +5,10 @@ const regionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },// Libellé de la région
+   Cod_region: {
+    type: String,
+    required: true,
+    unique: true,},// Code de la région
   Coordonnee: {
     type: String,
     default: null, // Nullable property pour la géolocalisation
@@ -27,6 +31,7 @@ regionSchema.methods.toDTO = function() {
   return {
     id: this._id,
     Lib_region: this.Lib_region,
+    Cod_region: this.Cod_region,
     Coordonnee: this.Coordonnee,
     Sommeil: this.Sommeil,
     DistrictId: this.DistrictId,

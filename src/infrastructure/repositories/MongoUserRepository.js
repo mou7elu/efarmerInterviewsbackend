@@ -3,6 +3,7 @@
  * Implémente l'interface IUserRepository avec MongoDB/Mongoose
  */
 
+const mongoose = require('mongoose');
 const IUserRepository = require('../../domain/repositories/IUserRepository');
 const UserEntity = require('../../domain/entities/UserEntity');
 const { NotFoundError, DuplicateError } = require('../../shared/errors/DomainErrors');
@@ -58,9 +59,16 @@ class MongoUserRepository extends IUserRepository {
     }
   }
 
-  async findAll(criteria = {}) {
+  async findAll(criteria = {}, options = {}) {
     try {
-      const userDocs = await this.userModel.find(criteria).populate('profileId');
+      let query = this.userModel.find(criteria).populate('profileId');
+      
+      // Appliquer les options de pagination et tri
+      if (options.skip) query = query.skip(options.skip);
+      if (options.limit) query = query.limit(options.limit);
+      if (options.sort) query = query.sort(options.sort);
+      
+      const userDocs = await query;
       return userDocs.map(doc => this._toEntity(doc));
     } catch (error) {
       throw new Error(`Erreur lors de la recherche de tous les utilisateurs: ${error.message}`);
@@ -99,23 +107,50 @@ class MongoUserRepository extends IUserRepository {
     }
   }
 
-  async update(id, userEntity) {
+  async update(id, updateData) {
     try {
-      const updateData = {
-        Nom_ut: userEntity.nomUt,
-        Pren_ut: userEntity.prenomUt,
-        Tel: userEntity.telephone,
-        Genre: userEntity.genre,
-        profileId: userEntity.profileId,
-        isGodMode: userEntity.isGodMode,
-        Sommeil: userEntity.sommeil,
-        ResponsableId: userEntity.responsableId,
-        Photo: userEntity.photo
-      };
+      const mongoUpdateData = {};
+
+      // Ajouter uniquement les champs définis
+      if (updateData.email !== undefined) mongoUpdateData.email = updateData.email;
+      if (updateData.nomUt !== undefined) mongoUpdateData.Nom_ut = updateData.nomUt;
+      if (updateData.prenomUt !== undefined) mongoUpdateData.Pren_ut = updateData.prenomUt;
+      if (updateData.telephone !== undefined) {
+        console.log('MongoUserRepository - updateData.telephone:', updateData.telephone);
+        mongoUpdateData.Tel = updateData.telephone;
+      }
+      if (updateData.genre !== undefined) mongoUpdateData.Genre = updateData.genre;
+      
+      // Gérer profileId - s'assurer que c'est un ObjectId valide ou null
+      if (updateData.profileId !== undefined) {
+        if (updateData.profileId === null || updateData.profileId === '') {
+          mongoUpdateData.profileId = null;
+        } else if (mongoose.Types.ObjectId.isValid(updateData.profileId)) {
+          mongoUpdateData.profileId = updateData.profileId;
+        }
+        // Sinon, ne pas mettre à jour profileId si invalide
+      }
+      
+      if (updateData.isGodMode !== undefined) mongoUpdateData.isGodMode = updateData.isGodMode;
+      if (updateData.sommeil !== undefined) mongoUpdateData.Sommeil = updateData.sommeil;
+      
+      // Gérer responsableId - s'assurer que c'est un ObjectId valide ou null
+      if (updateData.responsableId !== undefined) {
+        if (updateData.responsableId === null || updateData.responsableId === '') {
+          mongoUpdateData.ResponsableId = null;
+        } else if (mongoose.Types.ObjectId.isValid(updateData.responsableId)) {
+          mongoUpdateData.ResponsableId = updateData.responsableId;
+        }
+        // Sinon, ne pas mettre à jour ResponsableId si invalide
+      }
+      
+      if (updateData.photo !== undefined) mongoUpdateData.Photo = updateData.photo;
+
+      console.log('MongoUserRepository - mongoUpdateData:', mongoUpdateData);
 
       const updatedDoc = await this.userModel.findByIdAndUpdate(
         id, 
-        updateData, 
+        mongoUpdateData, 
         { new: true, runValidators: true }
       ).populate('profileId');
 
@@ -198,6 +233,19 @@ class MongoUserRepository extends IUserRepository {
   async exists(id) {
     try {
       const doc = await this.userModel.findById(id).select('_id');
+      return !!doc;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async emailExists(email, excludeUserId = null) {
+    try {
+      const query = { email };
+      if (excludeUserId) {
+        query._id = { $ne: excludeUserId };
+      }
+      const doc = await this.userModel.findOne(query).select('_id');
       return !!doc;
     } catch (error) {
       return false;

@@ -35,16 +35,12 @@ const register = async (req, res) => {
     });
 
     const token = generateToken(user._id);
+    const userDTO = user.toDTO();
 
     res.status(201).json({
       success: true,
       data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        department: user.department,
+        user: userDTO,
         token
       }
     });
@@ -96,15 +92,13 @@ const login = async (req, res) => {
 
     const token = generateToken(user._id);
 
+    // Utiliser toDTO pour inclure toutes les propriétés nécessaires
+    const userDTO = user.toDTO();
+
     res.json({
       success: true,
       data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        department: user.department,
+        user: userDTO,
         token
       }
     });
@@ -124,9 +118,16 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
     res.json({
       success: true,
-      data: user
+      data: user.toDTO()
     });
   } catch (error) {
     console.error('GetMe error:', error);

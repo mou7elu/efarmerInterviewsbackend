@@ -5,6 +5,10 @@ const SousprefSchema = new mongoose.Schema({
     type: String,
     required: true,
   },// Libellé de la sous-préfecture
+  Cod_Souspref: {
+    type: String,
+    required: true,
+    unique: true,},// Code de la sous-préfecture
   DepartementId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Departement',
@@ -19,6 +23,7 @@ SousprefSchema.methods.toDTO = function() {
   return {
     id: this._id,
     Lib_Souspref: this.Lib_Souspref,
+    Cod_Souspref: this.Cod_Souspref,
     DepartementId: this.DepartementId,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt

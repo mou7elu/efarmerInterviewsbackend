@@ -104,8 +104,9 @@ class BaseController {
    */
   getPaginationParams(req) {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
-    const offset = (page - 1) * limit;
+    // Pas de limite maximale - si non spécifié, retourne toutes les données
+    const limit = parseInt(req.query.limit) || 0; // 0 = pas de limite
+    const offset = limit > 0 ? (page - 1) * limit : 0;
 
     return { page, limit, offset };
   }

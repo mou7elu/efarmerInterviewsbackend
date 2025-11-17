@@ -1,45 +1,55 @@
-const BaseUseCase = require('../BaseUseCase');
-const { PaysRepository } = require('../../../infrastructure/repositories/PaysRepository');
-const { ValidationError } = require('../../../shared/errors/ValidationError');
+const Pays = require('../../../../models/Pays');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
-const { DuplicateError } = require('../../../shared/errors/DuplicateError');
+const { ValidationError } = require('../../../shared/errors/ValidationError');
 
 /**
- * Use Case pour mettre à jour un pays
+ * Use Case: Mettre à jour un pays
  */
-class UpdatePaysUseCase extends BaseUseCase {
-  constructor() {
-    super();
-    this.paysRepository = new PaysRepository();
-  }
+class UpdatePaysUseCase {
+  /**
+   * Exécute le use case
+   * @param {string} id - ID du pays à mettre à jour
+   * @param {Object} data - Nouvelles données
+   * @returns {Promise<Object>} Le pays mis à jour
+   */
+  async execute(id, data) {
+    // Trouver le pays
+    const pays = await Pays.findById(id);
 
-  async execute(id, input) {
-    if (!id) {
-      throw new ValidationError('L\'ID du pays est requis');
+    if (!pays) {
+      throw new NotFoundError(`Pays avec l'ID ${id} non trouvé`);
     }
 
-    this.validateInput(input, ['libPays']);
+    // Validation si le nom change
+    if (data.Lib_pays && data.Lib_pays.trim() !== pays.Lib_pays) {
+      const existingPays = await Pays.findOne({ 
+        Lib_pays: { $regex: new RegExp(`^${data.Lib_pays.trim()}$`, 'i') },
+        _id: { $ne: id }
+      });
 
-    // Vérifier que le pays existe
-    const existingPays = await this.paysRepository.findById(id);
-    if (!existingPays) {
-      throw new NotFoundError('Pays non trouvé');
+      if (existingPays) {
+        throw new ValidationError(`Le pays "${data.Lib_pays}" existe déjà`);
+      }
+
+      pays.Lib_pays = data.Lib_pays.trim();
     }
 
-    // Vérifier l'unicité du libellé (exclure l'ID actuel)
-    const duplicateCheck = await this.paysRepository.findByLibelle(input.libPays);
-    if (duplicateCheck && duplicateCheck.id !== parseInt(id)) {
-      throw new DuplicateError('Un pays avec ce libellé existe déjà');
+    // Mise à jour des autres champs
+    if (data.Coordonnee !== undefined) {
+      pays.Coordonnee = data.Coordonnee;
     }
 
-    // Mettre à jour l'entité
-    const updateData = {
-      libPays: input.libPays,
-      coordonnee: input.coordonnee,
-      sommeil: input.sommeil
-    };
+    if (data.Indicatif !== undefined) {
+      pays.Indicatif = data.Indicatif;
+    }
 
-    return await this.paysRepository.update(id, updateData);
+    if (data.Sommeil !== undefined) {
+      pays.Sommeil = data.Sommeil;
+    }
+
+    await pays.save();
+
+    return pays.toDTO();
   }
 }
 

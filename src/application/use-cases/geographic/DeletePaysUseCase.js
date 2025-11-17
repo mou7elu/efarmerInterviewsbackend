@@ -1,32 +1,37 @@
-const BaseUseCase = require('../BaseUseCase');
-const { PaysRepository } = require('../../../infrastructure/repositories/PaysRepository');
-const { ValidationError } = require('../../../shared/errors/ValidationError');
+const Pays = require('../../../../models/Pays');
+const District = require('../../../../models/district');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const { ValidationError } = require('../../../shared/errors/ValidationError');
 
 /**
- * Use Case pour supprimer un pays
+ * Use Case: Supprimer un pays
  */
-class DeletePaysUseCase extends BaseUseCase {
-  constructor() {
-    super();
-    this.paysRepository = new PaysRepository();
-  }
-
+class DeletePaysUseCase {
+  /**
+   * Exécute le use case
+   * @param {string} id - ID du pays à supprimer
+   * @returns {Promise<void>}
+   */
   async execute(id) {
-    if (!id) {
-      throw new ValidationError('L\'ID du pays est requis');
+    // Trouver le pays
+    const pays = await Pays.findById(id);
+
+    if (!pays) {
+      throw new NotFoundError(`Pays avec l'ID ${id} non trouvé`);
     }
 
-    // Vérifier que le pays existe
-    const existingPays = await this.paysRepository.findById(id);
-    if (!existingPays) {
-      throw new NotFoundError('Pays non trouvé');
+    // Vérifier s'il y a des districts liés
+    const districtsCount = await District.countDocuments({ PaysId: id });
+
+    if (districtsCount > 0) {
+      throw new ValidationError(
+        `Impossible de supprimer le pays "${pays.Lib_pays}". ` +
+        `Il contient ${districtsCount} district(s). Supprimez d'abord les districts.`
+      );
     }
 
-    // TODO: Vérifier s'il y a des dépendances (districts, régions, etc.)
-    // avant de supprimer
-
-    return await this.paysRepository.delete(id);
+    // Supprimer le pays
+    await pays.deleteOne();
   }
 }
 

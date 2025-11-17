@@ -9,11 +9,11 @@ const villageSchema = new mongoose.Schema({
     type: String,
     default: null,
   },// Coordonnée du village geojson point
-  PaysId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Pays',
-    required: true,
-  },// Référence au pays
+    ZonedenombreId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Zonedenombre',
+      required: true,
+    },// Référence à la zone de dénombrement
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
@@ -24,7 +24,7 @@ villageSchema.methods.toDTO = function() {
     id: this._id,
     Lib_village: this.Lib_village,
     Coordonnee: this.Coordonnee,
-    PaysId: this.PaysId,
+    ZonedenombreId: this.ZonedenombreId,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

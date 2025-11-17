@@ -1,15 +1,14 @@
-const BaseUseCase = require('../BaseUseCase');
-const { PaysRepository } = require('../../../infrastructure/repositories/PaysRepository');
+const Pays = require('../../../../models/Pays');
 
 /**
- * Use Case pour obtenir tous les pays avec filtres et pagination
+ * Use Case: Obtenir tous les pays avec filtres et pagination
  */
-class GetAllPaysUseCase extends BaseUseCase {
-  constructor() {
-    super();
-    this.paysRepository = new PaysRepository();
-  }
-
+class GetAllPaysUseCase {
+  /**
+   * Exécute le use case
+   * @param {Object} filters - Filtres de recherche
+   * @returns {Promise<Object>} Liste des pays avec pagination
+   */
   async execute(filters = {}) {
     const {
       page = 1,
@@ -18,29 +17,36 @@ class GetAllPaysUseCase extends BaseUseCase {
       search = null
     } = filters;
 
+    // Construction de la requête
+    const query = {};
+
+    // Filtre par statut actif/inactif
+    if (actifSeulement) {
+      query.Sommeil = false;
+    }
+
+    // Recherche par nom
     if (search) {
-      const items = await this.paysRepository.searchByName(search, actifSeulement);
-      return {
-        items,
-        total: items.length,
-        page: 1,
-        pages: 1
-      };
+      query.Lib_pays = { $regex: search, $options: 'i' };
     }
 
-    if (page && limit) {
-      return await this.paysRepository.findPaginated(page, limit, actifSeulement);
-    }
+    // Pagination
+    const skip = (page - 1) * limit;
 
-    const items = actifSeulement 
-      ? await this.paysRepository.findActifs()
-      : await this.paysRepository.findAll();
+    // Exécution de la requête
+    const [items, total] = await Promise.all([
+      Pays.find(query)
+        .sort({ Lib_pays: 1 })
+        .skip(skip)
+        .limit(limit),
+      Pays.countDocuments(query)
+    ]);
 
     return {
-      items,
-      total: items.length,
-      page: 1,
-      pages: 1
+      items: items.map(pays => pays.toDTO()),
+      page,
+      pages: Math.ceil(total / limit),
+      total
     };
   }
 }

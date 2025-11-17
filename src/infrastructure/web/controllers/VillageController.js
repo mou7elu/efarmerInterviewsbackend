@@ -1,10 +1,10 @@
-const { GetAllVillagesUseCase } = require('../../../application/use-cases/villages/GetAllVillagesUseCase');
-const { GetVillageByIdUseCase } = require('../../../application/use-cases/villages/GetVillageByIdUseCase');
-const { CreateVillageUseCase } = require('../../../application/use-cases/villages/CreateVillageUseCase');
-const { UpdateVillageUseCase } = require('../../../application/use-cases/villages/UpdateVillageUseCase');
-const { DeleteVillageUseCase } = require('../../../application/use-cases/villages/DeleteVillageUseCase');
-const { SearchVillagesUseCase } = require('../../../application/use-cases/villages/SearchVillagesUseCase');
-const { GetVillageStatsUseCase } = require('../../../application/use-cases/villages/GetVillageStatsUseCase');
+const { 
+  GetAllVillagesUseCase,
+  GetVillageUseCase,
+  CreateVillageUseCase,
+  UpdateVillageUseCase,
+  DeleteVillageUseCase
+} = require('../../../application/use-cases/geographic/VillageUseCases');
 
 /**
  * Contrôleur pour la gestion des villages dans l'architecture Clean
@@ -12,12 +12,10 @@ const { GetVillageStatsUseCase } = require('../../../application/use-cases/villa
 class VillageController {
   constructor() {
     this.getAllVillagesUseCase = new GetAllVillagesUseCase();
-    this.getVillageByIdUseCase = new GetVillageByIdUseCase();
+    this.getVillageUseCase = new GetVillageUseCase();
     this.createVillageUseCase = new CreateVillageUseCase();
     this.updateVillageUseCase = new UpdateVillageUseCase();
     this.deleteVillageUseCase = new DeleteVillageUseCase();
-    this.searchVillagesUseCase = new SearchVillagesUseCase();
-    this.getVillageStatsUseCase = new GetVillageStatsUseCase();
   }
 
   /**
@@ -56,7 +54,7 @@ class VillageController {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
-      const result = await this.getVillageByIdUseCase.execute(id);
+      const result = await this.getVillageUseCase.execute(id);
 
       res.json({
         success: true,

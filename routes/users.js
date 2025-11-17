@@ -1,254 +1,80 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
-const mongoose = require('mongoose');
+const { UserController, ProfileController } = require('../src/infrastructure/web/controllers');
 
 const router = express.Router();
 
 // Middleware d'authentification pour toutes les routes (désactivé pour le développement)
 // router.use(protect);
 
+// ==================== USER ROUTES ====================
+
 // GET /api/users - Récupérer tous les utilisateurs
-router.get('/', async (req, res) => {
-  try {
-    console.log('🔍 Récupération des utilisateurs...');
-    const User = require('../models/User');
-    
-    const { search, page = 1, limit = 10 } = req.query;
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-    
-    // Construire le filtre de recherche
-    let filter = {};
-    if (search && search.trim()) {
-      filter.$or = [
-        { email: { $regex: search.trim(), $options: 'i' } },
-        { Nom_ut: { $regex: search.trim(), $options: 'i' } },
-        { Pren_ut: { $regex: search.trim(), $options: 'i' } }
-      ];
-    }
-    
-    // Récupérer les utilisateurs avec pagination
-    const [users, total] = await Promise.all([
-      User.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum),
-      User.countDocuments(filter)
-    ]);
-    
-    console.log(`✅ Utilisateurs récupérés: ${users.length}/${total}`);
-    console.log(`✅ Données utilisateurs:`, users);
-    
-    // Convertir en DTO (sans mot de passe) - Utilisation de toJSON()
-    const usersDTO = users.map((user, index) => {
-      const userJson = user.toJSON();
-      console.log(`\n👤 User toJSON() ${index + 1}:`, JSON.stringify(userJson, null, 2));
-      
-      // Créer le DTO en excluant le mot de passe et en normalisant les champs
-      const dto = {
-        id: userJson._id,
-        email: userJson.email || '',
-        Nom_ut: userJson.Nom_ut || '',
-        Pren_ut: userJson.Pren_ut || '',
-        Tel: userJson.Tel || '',
-        Genre: userJson.Genre !== undefined ? userJson.Genre : 0,
-        profileId: userJson.profileId || null,
-        isGodMode: userJson.isGodMode !== undefined ? userJson.isGodMode : false,
-        Sommeil: userJson.Sommeil !== undefined ? userJson.Sommeil : false,
-        createdAt: userJson.createdAt,
-        updatedAt: userJson.updatedAt
-      };
-      
-      console.log(`\n✅ DTO final ${index + 1}:`, JSON.stringify(dto, null, 2));
-      return dto;
-    });
-    
-    console.log(`🔍 DTO créé:`, JSON.stringify(usersDTO, null, 2));
-    
-    res.json({
-      items: usersDTO,
-      total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(total / limitNum)
-    });
-  } catch (error) {
-    console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la récupération des utilisateurs',
-      error: error.message 
-    });
-  }
-});
+router.get('/', UserController.getAll);
+
+// GET /api/users/active - Récupérer les utilisateurs actifs
+router.get('/active', UserController.getActive);
+
+// GET /api/users/inactive - Récupérer les utilisateurs inactifs
+router.get('/inactive', UserController.getInactive);
 
 // GET /api/users/:id - Récupérer un utilisateur spécifique
-router.get('/:id', async (req, res) => {
-  try {
-    const User = require('../models/User');
-    const { id } = req.params;
-    
-    // Validation de l'ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'ID utilisateur invalide' });
-    }
-    
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-    
-    res.json({
-      id: user._id,
-      email: user.email,
-      Nom_ut: user.Nom_ut,
-      Pren_ut: user.Pren_ut,
-      Tel: user.Tel,
-      Genre: user.Genre,
-      profileId: user.profileId,
-      isGodMode: user.isGodMode,
-      Sommeil: user.Sommeil,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    });
-  } catch (error) {
-    console.error('❌ Erreur lors de la récupération de l\'utilisateur:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la récupération de l\'utilisateur',
-      error: error.message 
-    });
-  }
-});
+router.get('/:id', UserController.getById);
+
+// GET /api/users/profile/:profileId - Récupérer les utilisateurs par profil
+router.get('/profile/:profileId', UserController.getByProfile);
+
+// GET /api/users/responsable/:responsableId - Récupérer les utilisateurs par responsable
+router.get('/responsable/:responsableId', UserController.getByResponsable);
 
 // POST /api/users - Créer un nouvel utilisateur
-router.post('/', async (req, res) => {
-  try {
-    const User = require('../models/User');
-    const { email, password, Nom_ut, Pren_ut, Tel, Genre, profileId } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email et mot de passe requis' });
-    }
-
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Un utilisateur avec cet email existe déjà' });
-    }
-
-    const newUser = new User({
-      email,
-      password,
-      Nom_ut: Nom_ut || '',
-      Pren_ut: Pren_ut || '',
-      Tel: Tel || '',
-      Genre: Genre || 0,
-      profileId: profileId || null
-    });
-
-    const user = await newUser.save();
-
-    res.status(201).json({
-      id: user._id,
-      email: user.email,
-      Nom_ut: user.Nom_ut,
-      Pren_ut: user.Pren_ut,
-      Tel: user.Tel,
-      Genre: user.Genre,
-      profileId: user.profileId,
-      isGodMode: user.isGodMode,
-      Sommeil: user.Sommeil,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    });
-  } catch (error) {
-    console.error('❌ Erreur lors de la création de l\'utilisateur:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la création de l\'utilisateur',
-      error: error.message 
-    });
-  }
-});
+router.post('/', UserController.create);
 
 // PUT /api/users/:id - Mettre à jour un utilisateur 
-router.put('/:id', async (req, res) => {
-  try {
-    const User = require('../models/User');
-    const { id } = req.params;
-    
-    // Validation de l'ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'ID utilisateur invalide' });
-    }
-    
-    const { email, Nom_ut, Pren_ut, Tel, Genre, profileId, Sommeil } = req.body;
-    
-    // Construire l'objet de mise à jour
-    const updateData = {};
-    if (email !== undefined) updateData.email = email;
-    if (Nom_ut !== undefined) updateData.Nom_ut = Nom_ut;
-    if (Pren_ut !== undefined) updateData.Pren_ut = Pren_ut;
-    if (Tel !== undefined) updateData.Tel = Tel;
-    if (Genre !== undefined) updateData.Genre = Genre;
-    if (profileId !== undefined) updateData.profileId = profileId;
-    if (Sommeil !== undefined) updateData.Sommeil = Sommeil;
-    
-    const user = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+router.put('/:id', UserController.update);
 
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
+// PUT /api/users/:id/password - Mettre à jour le mot de passe (admin)
+router.put('/:id/password', UserController.updatePassword);
 
-    res.json({
-      id: user._id,
-      email: user.email,
-      Nom_ut: user.Nom_ut,
-      Pren_ut: user.Pren_ut,
-      Tel: user.Tel,
-      Genre: user.Genre,
-      profileId: user.profileId,
-      isGodMode: user.isGodMode,
-      Sommeil: user.Sommeil,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    });
-  } catch (error) {
-    console.error('❌ Erreur lors de la mise à jour de l\'utilisateur:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la mise à jour de l\'utilisateur',
-      error: error.message 
-    });
-  }
-});
+// PUT /api/users/:id/profile - Changer le profil d'un utilisateur
+router.put('/:id/profile', UserController.updateProfile);
+
+// PATCH /api/users/:id/toggle-status - Activer/Désactiver un utilisateur
+router.patch('/:id/toggle-status', UserController.toggleStatus);
+
+// POST /api/users/:id/change-password - Changer son propre mot de passe
+router.post('/:id/change-password', UserController.changePassword);
 
 // DELETE /api/users/:id - Supprimer un utilisateur
-router.delete('/:id', async (req, res) => {
-  try {
-    const User = require('../models/User');
-    const { id } = req.params;
-    
-    // Validation de l'ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'ID utilisateur invalide' });
-    }
-    
-    const user = await User.findByIdAndDelete(id);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-    
-    res.json({ message: 'Utilisateur supprimé avec succès' });
-  } catch (error) {
-    console.error('❌ Erreur lors de la suppression de l\'utilisateur:', error);
-    res.status(500).json({ 
-      message: 'Erreur lors de la suppression de l\'utilisateur',
-      error: error.message 
-    });
-  }
-});
+router.delete('/:id', UserController.delete);
+
+// DELETE /api/users/profile/:profileId - Supprimer tous les utilisateurs d'un profil
+router.delete('/profile/:profileId', UserController.deleteByProfile);
+
+// ==================== PROFILE ROUTES ====================
+
+// GET /api/users/profiles - Récupérer tous les profils
+router.get('/profiles', ProfileController.getAll);
+
+// GET /api/users/profiles/:id - Récupérer un profil spécifique
+router.get('/profiles/:id', ProfileController.getById);
+
+// GET /api/users/profiles/permission/:permission - Profils avec une permission spécifique
+router.get('/profiles/permission/:permission', ProfileController.getWithPermission);
+
+// GET /api/users/profiles/:id/check/:permission - Vérifier si un profil a une permission
+router.get('/profiles/:id/check/:permission', ProfileController.checkPermission);
+
+// POST /api/users/profiles - Créer un nouveau profil
+router.post('/profiles', ProfileController.create);
+
+// PUT /api/users/profiles/:id - Mettre à jour un profil
+router.put('/profiles/:id', ProfileController.update);
+
+// PUT /api/users/profiles/:id/permissions - Mettre à jour les permissions
+router.put('/profiles/:id/permissions', ProfileController.updatePermissions);
+
+// DELETE /api/users/profiles/:id - Supprimer un profil
+router.delete('/profiles/:id', ProfileController.delete);
 
 module.exports = router;
