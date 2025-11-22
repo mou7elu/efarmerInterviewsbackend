@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // Utiliser le modèle User principal
-const User = require('../../../models/User');
+const User = require('../../../../models/User');
 
 /**
  * POST /api/auth/login
