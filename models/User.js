@@ -80,6 +80,7 @@ userSchema.methods.toDTO = function() {
     email: this.email,
     Nom_ut: this.Nom_ut,
     Pren_ut: this.Pren_ut,
+    code_ut: this.code_ut,
     // Alias pour compatibilité frontend
     firstName: this.Nom_ut,
     lastName: this.Pren_ut,
