@@ -22,6 +22,7 @@ const userToDTO = (u) => {
   return {
     id: u._id,
     email: u.email || '',
+    code_ut: u.code_ut || '',
     Nom_ut: u.Nom_ut || '',
     Pren_ut: u.Pren_ut || '',
     Tel: u.Tel || '',
@@ -30,6 +31,7 @@ const userToDTO = (u) => {
     isGodMode: u.isGodMode || false,
     Sommeil: u.Sommeil !== undefined ? u.Sommeil : false,
     ResponsableId: u.ResponsableId || null,
+    Photo: u.Photo || null,
     createdAt: u.createdAt || null,
     updatedAt: u.updatedAt || null
   };
@@ -51,6 +53,25 @@ class CreateUserUseCase {
     const emailExists = await repository.emailExists(data.email);
     if (emailExists) {
       throw new ValidationError('Un utilisateur avec cet email existe déjà');
+    }
+
+    // Générer un code_ut unique si non fourni
+    if (!data.code_ut) {
+      const generateCodeUt = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 4; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      data.code_ut = generateCodeUt();
+      // Vérifier l'unicité du code
+      const UserModel = require('../../../models/User');
+      while (await UserModel.findOne({ code_ut: data.code_ut })) {
+        data.code_ut = generateCodeUt();
+      }
     }
 
     const user = await repository.create(data);

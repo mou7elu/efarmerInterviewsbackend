@@ -4,11 +4,12 @@
  */
 class User {
   constructor({
-    id, email, password, profileId, isGodMode, Nom_ut, Pren_ut, Sommeil,
+    id, email, code_ut, password, profileId, isGodMode, Nom_ut, Pren_ut, Sommeil,
     Photo, Tel, Genre, ResponsableId, createdAt, updatedAt
   }) {
     this.id = id;
     this.email = email;
+    this.code_ut = code_ut;
     this.password = password;
     this.profileId = profileId;
     this.isGodMode = isGodMode || false;
@@ -74,6 +75,7 @@ class User {
     return {
       id: this.id,
       email: this.email,
+      code_ut: this.code_ut,
       Nom_ut: this.Nom_ut,
       Pren_ut: this.Pren_ut,
       Tel: this.Tel,

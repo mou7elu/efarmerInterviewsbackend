@@ -5,17 +5,8 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
-// Modèle User temporaire - plus tard on utilisera le vrai modèle
-const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  firstName: String,
-  lastName: String,
-  role: { type: String, default: 'user' },
-  isActive: { type: Boolean, default: true }
-}, { timestamps: true });
-
-const User = mongoose.model('User', userSchema);
+// Utiliser le modèle User principal
+const User = require('../../../models/User');
 
 /**
  * POST /api/auth/login
@@ -59,7 +50,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Vérification que l'utilisateur est actif
-    if (!user.isActive) {
+    if (user.Sommeil) {
       console.log('❌ Utilisateur inactif:', email);
       return res.status(401).json({
         success: false,
@@ -72,8 +63,9 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { 
         userId: user._id,
+        id: user._id,
         email: user.email,
-        role: user.role
+        role: user.isGodMode ? 'admin' : 'user'
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '24h' }
@@ -81,20 +73,16 @@ router.post('/login', async (req, res) => {
 
     console.log('✅ Connexion réussie pour:', email);
 
+    // Utiliser toDTO pour la réponse
+    const userDTO = user.toDTO();
+
     // Réponse réussie
     res.json({
       success: true,
       message: 'Connexion réussie',
       data: {
         token,
-        user: {
-          id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          isActive: user.isActive
-        }
+        user: userDTO
       }
     });
 
@@ -114,7 +102,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, password, Nom_ut, Pren_ut, Tel, Genre, profileId, isGodMode, ResponsableId } = req.body;
 
     // Validation des données
     if (!email || !password) {
@@ -135,35 +123,45 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Hashage du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Générer un code_ut unique (4 caractères alphanumériques)
+    const generateCodeUt = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    let code_ut = generateCodeUt();
+    // Vérifier l'unicité du code
+    while (await User.findOne({ code_ut })) {
+      code_ut = generateCodeUt();
+    }
 
     // Création de l'utilisateur
-    const user = new User({
+    const user = await User.create({
       email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      role: role || 'user',
-      isActive: true
+      code_ut,
+      password,
+      Nom_ut: Nom_ut || '',
+      Pren_ut: Pren_ut || '',
+      Tel: Tel || '',
+      Genre: Genre || 0,
+      profileId: profileId || null,
+      isGodMode: isGodMode || false,
+      ResponsableId: ResponsableId || null
     });
 
-    await user.save();
+    console.log('✅ Nouvel utilisateur créé:', email, '- Code:', code_ut);
 
-    console.log('✅ Nouvel utilisateur créé:', email);
+    const userDTO = user.toDTO();
 
     res.status(201).json({
       success: true,
       message: 'Utilisateur créé avec succès',
       data: {
-        user: {
-          id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          isActive: user.isActive
-        }
+        user: userDTO
       }
     });
 
@@ -194,7 +192,7 @@ router.get('/me', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId || decoded.id).select('-password');
 
     if (!user) {
       return res.status(404).json({
@@ -204,17 +202,12 @@ router.get('/me', async (req, res) => {
       });
     }
 
+    const userDTO = user.toDTO();
+
     res.json({
       success: true,
       data: {
-        user: {
-          id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          isActive: user.isActive
-        }
+        user: userDTO
       }
     });
 

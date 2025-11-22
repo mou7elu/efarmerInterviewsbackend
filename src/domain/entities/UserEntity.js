@@ -10,6 +10,7 @@ class UserEntity extends BaseEntity {
   constructor({
     id,
     email,
+    code_ut,
     password,
     nomUt,
     prenomUt,
@@ -26,6 +27,7 @@ class UserEntity extends BaseEntity {
     super(id);
     
     this._email = email;
+    this._code_ut = code_ut;
     this._password = password;
     this._nomUt = nomUt || '';
     this._prenomUt = prenomUt || '';
@@ -45,6 +47,7 @@ class UserEntity extends BaseEntity {
 
   // Getters
   get email() { return this._email; }
+  get code_ut() { return this._code_ut; }
   get password() { return this._password; }
   get nomUt() { return this._nomUt; }
   get prenomUt() { return this._prenomUt; }
@@ -111,6 +114,7 @@ class UserEntity extends BaseEntity {
     return {
       ...super.toPlainObject(),
       email: this._email,
+      code_ut: this._code_ut,
       nomUt: this._nomUt,
       prenomUt: this._prenomUt,
       fullName: this.fullName,

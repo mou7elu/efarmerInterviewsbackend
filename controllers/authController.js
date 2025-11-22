@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 
 // Générer le token JWT
@@ -13,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, department } = req.body;
+    const { email, password, Nom_ut, Pren_ut, Tel, Genre, profileId, isGodMode, ResponsableId } = req.body;
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({ email });
@@ -24,14 +25,34 @@ const register = async (req, res) => {
       });
     }
 
+    // Générer un code_ut unique (4 caractères alphanumériques)
+    const generateCodeUt = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    let code_ut = generateCodeUt();
+    // Vérifier l'unicité du code
+    while (await User.findOne({ code_ut })) {
+      code_ut = generateCodeUt();
+    }
+
     // Créer l'utilisateur
     const user = await User.create({
-      name,
       email,
+      code_ut,
       password,
-      role,
-      phone,
-      department
+      Nom_ut: Nom_ut || '',
+      Pren_ut: Pren_ut || '',
+      Tel: Tel || '',
+      Genre: Genre || 0,
+      profileId: profileId || null,
+      isGodMode: isGodMode || false,
+      ResponsableId: ResponsableId || null
     });
 
     const token = generateToken(user._id);
@@ -69,8 +90,8 @@ const login = async (req, res) => {
     }
 
     // Vérifier l'utilisateur et inclure le password
-    const user = await User.findOne({ email }).select('+password');
-    if (!user || !user.isActive) {
+    const user = await User.findOne({ email });
+    if (!user || user.Sommeil) {
       return res.status(401).json({
         success: false,
         message: 'Identifiants invalides'
@@ -78,7 +99,7 @@ const login = async (req, res) => {
     }
 
     // Vérifier le mot de passe
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -86,8 +107,8 @@ const login = async (req, res) => {
       });
     }
 
-    // Mettre à jour la dernière connexion
-    user.lastLogin = new Date();
+    // Mettre à jour l'utilisateur si nécessaire
+    // Note: lastLogin n'existe plus dans le schéma actuel
     await user.save();
 
     const token = generateToken(user._id);

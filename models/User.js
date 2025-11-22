@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },// Email de l'utilisateur
+  code_ut: { type: String, required: true, unique: true },// automatiquement généré de façon unique 4 caractères pour la generation du code du menage
   password: { type: String, required: true },// Mot de passe de l'utilisateur
   profileId: { 
     type: Number, 

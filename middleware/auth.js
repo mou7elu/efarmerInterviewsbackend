@@ -19,7 +19,7 @@ const protect = async (req, res, next) => {
       // Récupérer l'utilisateur (sans le password)
       req.user = await User.findById(decoded.id).select('-password');
 
-      if (!req.user || !req.user.isActive) {
+      if (!req.user || req.user.Sommeil) {
         return res.status(401).json({
           success: false,
           message: 'Utilisateur non autorisé'
@@ -47,10 +47,11 @@ const protect = async (req, res, next) => {
 // Autoriser certains rôles
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.isGodMode ? 'admin' : 'user';
+    if (!roles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: `Rôle ${req.user.role} non autorisé pour cette action`
+        message: `Rôle ${userRole} non autorisé pour cette action`
       });
     }
     next();
