@@ -23,11 +23,12 @@ class CreateDepartementUseCase {
     }
 
     const existingDept = await Departement.findOne({ 
-      Cod_departement: data.Cod_departement.trim()
+      Cod_departement: data.Cod_departement.trim(),
+      RegionId: data.RegionId
     });
 
     if (existingDept) {
-      throw new ValidationError(`Le département avec le code "${data.Cod_departement}" existe déjà`);
+      throw new ValidationError(`Le département avec le code "${data.Cod_departement}" existe déjà dans cette région`);
     }
 
     const departement = new Departement({
@@ -90,18 +91,33 @@ class UpdateDepartementUseCase {
     }
 
     if (data.Cod_departement && data.Cod_departement !== departement.Cod_departement) {
+      const checkRegionId = data.RegionId !== undefined ? data.RegionId : departement.RegionId;
+      
       const existing = await Departement.findOne({ 
         Cod_departement: data.Cod_departement,
+        RegionId: checkRegionId,
         _id: { $ne: id }
       });
       if (existing) {
-        throw new ValidationError(`Le code "${data.Cod_departement}" existe déjà`);
+        throw new ValidationError(`Le code "${data.Cod_departement}" existe déjà dans cette région`);
       }
       departement.Cod_departement = data.Cod_departement;
     }
 
+    if (data.RegionId !== undefined && data.RegionId !== departement.RegionId) {
+      // Si on change de région, vérifier que le code n'existe pas dans la nouvelle région
+      const existing = await Departement.findOne({ 
+        Cod_departement: departement.Cod_departement,
+        RegionId: data.RegionId,
+        _id: { $ne: id }
+      });
+      if (existing) {
+        throw new ValidationError(`Le code "${departement.Cod_departement}" existe déjà dans la nouvelle région`);
+      }
+      departement.RegionId = data.RegionId;
+    }
+
     if (data.Lib_Departement) departement.Lib_Departement = data.Lib_Departement.trim();
-    if (data.RegionId !== undefined) departement.RegionId = data.RegionId;
 
     await departement.save();
     return departement.toDTO();

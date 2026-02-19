@@ -7,8 +7,7 @@ const ZonedenombreSchema = new mongoose.Schema({
   },// Libellé de la zone de dénombrement 
   Cod_ZD: {
     type: String,
-    required: true,
-    unique: true,},// Code de la zone de dénombrement 
+    required: true,},// Code de la zone de dénombrement 
   SecteurAdministratifId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'SecteurAdministratif',
@@ -17,6 +16,9 @@ const ZonedenombreSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par secteur administratif
+ZonedenombreSchema.index({ Cod_ZD: 1, SecteurAdministratifId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 ZonedenombreSchema.methods.toDTO = function() {

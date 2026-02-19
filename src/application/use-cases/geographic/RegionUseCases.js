@@ -23,11 +23,12 @@ class CreateRegionUseCase {
     }
 
     const existingRegion = await Region.findOne({ 
-      Cod_region: data.Cod_region.trim()
+      Cod_region: data.Cod_region.trim(),
+      DistrictId: data.DistrictId
     });
 
     if (existingRegion) {
-      throw new ValidationError(`La région avec le code "${data.Cod_region}" existe déjà`);
+      throw new ValidationError(`La région avec le code "${data.Cod_region}" existe déjà dans ce district`);
     }
 
     const region = new Region({
@@ -96,18 +97,33 @@ class UpdateRegionUseCase {
     }
 
     if (data.Cod_region && data.Cod_region !== region.Cod_region) {
+      const checkDistrictId = data.DistrictId !== undefined ? data.DistrictId : region.DistrictId;
+      
       const existing = await Region.findOne({ 
         Cod_region: data.Cod_region,
+        DistrictId: checkDistrictId,
         _id: { $ne: id }
       });
       if (existing) {
-        throw new ValidationError(`Le code "${data.Cod_region}" existe déjà`);
+        throw new ValidationError(`Le code "${data.Cod_region}" existe déjà dans ce district`);
       }
       region.Cod_region = data.Cod_region;
     }
 
+    if (data.DistrictId !== undefined && data.DistrictId !== region.DistrictId) {
+      // Si on change de district, vérifier que le code n'existe pas dans le nouveau district
+      const existing = await Region.findOne({ 
+        Cod_region: region.Cod_region,
+        DistrictId: data.DistrictId,
+        _id: { $ne: id }
+      });
+      if (existing) {
+        throw new ValidationError(`Le code "${region.Cod_region}" existe déjà dans le nouveau district`);
+      }
+      region.DistrictId = data.DistrictId;
+    }
+
     if (data.Lib_region) region.Lib_region = data.Lib_region.trim();
-    if (data.DistrictId !== undefined) region.DistrictId = data.DistrictId;
     if (data.Coordonnee !== undefined) region.Coordonnee = data.Coordonnee;
     if (data.Sommeil !== undefined) region.Sommeil = data.Sommeil;
 

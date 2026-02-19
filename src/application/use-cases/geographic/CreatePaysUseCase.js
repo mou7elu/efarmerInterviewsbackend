@@ -30,7 +30,8 @@ class CreatePaysUseCase {
       Lib_pays: data.Lib_pays.trim(),
       Coordonnee: data.Coordonnee || null,
       Indicatif: data.Indicatif || null,
-      Sommeil: data.Sommeil || false
+      Sommeil: data.Sommeil || false,
+      Islocal: data.Islocal || false
     });
 
     await pays.save();

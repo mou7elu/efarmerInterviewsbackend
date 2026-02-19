@@ -47,6 +47,10 @@ class UpdatePaysUseCase {
       pays.Sommeil = data.Sommeil;
     }
 
+    if (data.Islocal !== undefined) {
+      pays.Islocal = data.Islocal;
+    }
+
     await pays.save();
 
     return pays.toDTO();

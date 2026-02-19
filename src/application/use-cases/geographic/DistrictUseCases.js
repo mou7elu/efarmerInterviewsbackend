@@ -23,13 +23,14 @@ class CreateDistrictUseCase {
       throw new NotFoundError(`Pays avec l'ID ${data.PaysId} non trouvé`);
     }
 
-    // Vérifier si le district existe déjà
+    // Vérifier si le district existe déjà dans ce pays
     const existingDistrict = await District.findOne({ 
-      Cod_district: data.Cod_district.trim()
+      Cod_district: data.Cod_district.trim(),
+      PaysId: data.PaysId
     });
 
     if (existingDistrict) {
-      throw new ValidationError(`Le district avec le code "${data.Cod_district}" existe déjà`);
+      throw new ValidationError(`Le district avec le code "${data.Cod_district}" existe déjà dans ce pays`);
     }
 
     const district = new District({
@@ -97,18 +98,33 @@ class UpdateDistrictUseCase {
     }
 
     if (data.Cod_district && data.Cod_district !== district.Cod_district) {
+      const checkPaysId = data.PaysId !== undefined ? data.PaysId : district.PaysId;
+      
       const existing = await District.findOne({ 
         Cod_district: data.Cod_district,
+        PaysId: checkPaysId,
         _id: { $ne: id }
       });
       if (existing) {
-        throw new ValidationError(`Le code "${data.Cod_district}" existe déjà`);
+        throw new ValidationError(`Le code "${data.Cod_district}" existe déjà dans ce pays`);
       }
       district.Cod_district = data.Cod_district;
     }
 
+    if (data.PaysId !== undefined && data.PaysId !== district.PaysId) {
+      // Si on change de pays, vérifier que le code n'existe pas dans le nouveau pays
+      const existing = await District.findOne({ 
+        Cod_district: district.Cod_district,
+        PaysId: data.PaysId,
+        _id: { $ne: id }
+      });
+      if (existing) {
+        throw new ValidationError(`Le code "${district.Cod_district}" existe déjà dans le nouveau pays`);
+      }
+      district.PaysId = data.PaysId;
+    }
+
     if (data.Lib_district) district.Lib_district = data.Lib_district.trim();
-    if (data.PaysId !== undefined) district.PaysId = data.PaysId;
     if (data.Sommeil !== undefined) district.Sommeil = data.Sommeil;
 
     await district.save();

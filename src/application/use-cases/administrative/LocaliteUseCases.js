@@ -17,9 +17,9 @@ class CreateLocaliteUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    const codeExists = await repository.codeExists(data.Cod_localite);
+    const codeExists = await repository.codeExistsInVillage(data.Cod_localite, data.VillageId);
     if (codeExists) {
-      throw new ValidationError('Une localité avec ce code existe déjà');
+      throw new ValidationError('Une localité avec ce code existe déjà dans ce village');
     }
 
     const localite = await repository.create(data);
@@ -87,10 +87,13 @@ class UpdateLocaliteUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    if (data.Cod_localite) {
-      const codeExists = await repository.codeExists(data.Cod_localite, id);
+    if (data.Cod_localite || data.VillageId) {
+      const checkCode = data.Cod_localite || existing.Cod_localite;
+      const checkVillageId = data.VillageId || existing.VillageId;
+      
+      const codeExists = await repository.codeExistsInVillage(checkCode, checkVillageId, id);
       if (codeExists) {
-        throw new ValidationError('Une localité avec ce code existe déjà');
+        throw new ValidationError('Une localité avec ce code existe déjà dans ce village');
       }
     }
 

@@ -10,21 +10,30 @@ const repository = new SousprefRepository();
  */
 class CreateSousprefUseCase {
   async execute(data) {
+    console.log('CreateSousprefUseCase - Input data:', data);
+    
     // Create entity to validate
     const entity = new Souspref(data);
+    console.log('CreateSousprefUseCase - Entity created:', entity);
+    
     const validation = entity.validate();
+    console.log('CreateSousprefUseCase - Validation result:', validation);
     
     if (!validation.isValid) {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    // Check if code already exists
-    const codeExists = await repository.codeExists(data.Cod_Souspref);
+    // Check if code already exists in the same departement
+    const codeExists = await repository.codeExistsInDepartement(data.Cod_Souspref, data.DepartementId);
+    console.log('CreateSousprefUseCase - Code exists in departement check:', codeExists);
+    
     if (codeExists) {
-      throw new ValidationError('Une sous-préfecture avec ce code existe déjà');
+      throw new ValidationError('Une sous-préfecture avec ce code existe déjà dans ce département');
     }
 
     const souspref = await repository.create(data);
+    console.log('CreateSousprefUseCase - Created souspref:', souspref);
+    
     return souspref.toDTO();
   }
 }
@@ -89,11 +98,14 @@ class UpdateSousprefUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    // Check if code already exists for another souspref
-    if (data.Cod_Souspref) {
-      const codeExists = await repository.codeExists(data.Cod_Souspref, id);
+    // Check if code already exists in the same departement for another souspref
+    if (data.Cod_Souspref || data.DepartementId) {
+      const checkCode = data.Cod_Souspref || existing.Cod_Souspref;
+      const checkDepartementId = data.DepartementId || existing.DepartementId;
+      
+      const codeExists = await repository.codeExistsInDepartement(checkCode, checkDepartementId, id);
       if (codeExists) {
-        throw new ValidationError('Une sous-préfecture avec ce code existe déjà');
+        throw new ValidationError('Une sous-préfecture avec ce code existe déjà dans ce département');
       }
     }
 

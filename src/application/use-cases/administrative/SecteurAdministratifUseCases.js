@@ -17,9 +17,9 @@ class CreateSecteurAdministratifUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    const codeExists = await repository.codeExists(data.Cod_SecteurAdministratif);
+    const codeExists = await repository.codeExistsInSouspref(data.Cod_SecteurAdministratif, data.SousprefId);
     if (codeExists) {
-      throw new ValidationError('Un secteur administratif avec ce code existe déjà');
+      throw new ValidationError('Un secteur administratif avec ce code existe déjà dans cette sous-préfecture');
     }
 
     const secteur = await repository.create(data);
@@ -86,10 +86,13 @@ class UpdateSecteurAdministratifUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    if (data.Cod_SecteurAdministratif) {
-      const codeExists = await repository.codeExists(data.Cod_SecteurAdministratif, id);
+    if (data.Cod_SecteurAdministratif || data.SousprefId) {
+      const checkCode = data.Cod_SecteurAdministratif || existing.Cod_SecteurAdministratif;
+      const checkSousprefId = data.SousprefId || existing.SousprefId;
+      
+      const codeExists = await repository.codeExistsInSouspref(checkCode, checkSousprefId, id);
       if (codeExists) {
-        throw new ValidationError('Un secteur administratif avec ce code existe déjà');
+        throw new ValidationError('Un secteur administratif avec ce code existe déjà dans cette sous-préfecture');
       }
     }
 

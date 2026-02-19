@@ -16,10 +16,14 @@ class SecteurAdministratifController {
    */
   async create(req, res) {
     try {
+      console.log('SecteurAdministratifController.create - Body:', req.body);
       const useCase = new CreateSecteurAdministratifUseCase();
+      console.log('SecteurAdministratifController.create - UseCase created');
       const secteur = await useCase.execute(req.body);
+      console.log('SecteurAdministratifController.create - Secteur created:', secteur);
       res.status(201).json(secteur);
     } catch (error) {
+      console.error('SecteurAdministratifController.create - Error:', error);
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }

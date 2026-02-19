@@ -3,6 +3,7 @@ const { GetPaysUseCase } = require('../../../application/use-cases/geographic/Ge
 const { UpdatePaysUseCase } = require('../../../application/use-cases/geographic/UpdatePaysUseCase');
 const { DeletePaysUseCase } = require('../../../application/use-cases/geographic/DeletePaysUseCase');
 const { GetAllPaysUseCase } = require('../../../application/use-cases/geographic/GetAllPaysUseCase');
+const { GetLocalPaysUseCase } = require('../../../application/use-cases/geographic/GetLocalPaysUseCase');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 
 /**
@@ -15,6 +16,7 @@ class PaysController {
     this.updatePaysUseCase = new UpdatePaysUseCase();
     this.deletePaysUseCase = new DeletePaysUseCase();
     this.getAllPaysUseCase = new GetAllPaysUseCase();
+    this.getLocalPaysUseCase = new GetLocalPaysUseCase();
   }
 
   /**
@@ -213,6 +215,23 @@ class PaysController {
       res.json({
         success: true,
         data: result.items
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/pays/local
+   * Obtenir le pays local (Islocal = true)
+   */
+  async getLocal(req, res, next) {
+    try {
+      const result = await this.getLocalPaysUseCase.execute();
+      
+      res.json({
+        success: true,
+        data: result
       });
     } catch (error) {
       next(error);

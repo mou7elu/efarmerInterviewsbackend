@@ -43,6 +43,21 @@ class SousprefRepository extends BaseRepository {
   }
 
   /**
+   * Check if souspref code exists in a specific departement
+   * @param {string} code - Souspref code
+   * @param {string} departementId - Departement ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInDepartement(code, departementId, excludeId = null) {
+    const filters = { Cod_Souspref: code, DepartementId: departementId };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
    * Get all souspref with populated departement
    * @returns {Promise<Array>} Array of souspref with populated departement
    */

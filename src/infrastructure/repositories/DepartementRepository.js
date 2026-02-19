@@ -35,7 +35,22 @@ class DepartementRepository extends BaseRepository {
    * @returns {Promise<boolean>} True if exists, false otherwise
    */
   async codeExists(code, excludeId = null) {
-    const filters = { Cod_Depart: code };
+    const filters = { Cod_departement: code };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
+   * Check if departement code exists in a specific region
+   * @param {string} code - Departement code
+   * @param {string} regionId - Region ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInRegion(code, regionId, excludeId = null) {
+    const filters = { Cod_departement: code, RegionId: regionId };
     if (excludeId) {
       filters._id = { $ne: excludeId };
     }

@@ -17,6 +17,10 @@ const paysSchema = new mongoose.Schema({
     type: Boolean,
     default: false, // Par défaut désactivé, seul Godmode peut activer
   },
+  Islocal: {
+    type: Boolean,
+    default: false, // Pays local ou étranger
+  },
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
@@ -29,6 +33,7 @@ paysSchema.methods.toDTO = function() {
     Coordonnee: this.Coordonnee,
     Indicatif: this.Indicatif,
     Sommeil: this.Sommeil,
+    Islocal: this.Islocal,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

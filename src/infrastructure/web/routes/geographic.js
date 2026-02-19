@@ -18,6 +18,9 @@ const villageController = new VillageController();
 // GET /api/geographic/pays
 router.get('/pays', (req, res, next) => paysController.getAll(req, res, next));
 
+// GET /api/geographic/pays/local
+router.get('/pays/local', (req, res, next) => paysController.getLocal(req, res, next));
+
 // GET /api/geographic/pays/stats
 router.get('/pays/stats', (req, res, next) => paysController.getStats(req, res, next));
 

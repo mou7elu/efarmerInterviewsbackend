@@ -7,8 +7,7 @@ const regionSchema = new mongoose.Schema({
   },// Libellé de la région
    Cod_region: {
     type: String,
-    required: true,
-    unique: true,},// Code de la région
+    required: true,},// Code de la région
   Coordonnee: {
     type: String,
     default: null, // Nullable property pour la géolocalisation
@@ -25,6 +24,9 @@ const regionSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par district
+regionSchema.index({ Cod_region: 1, DistrictId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 regionSchema.methods.toDTO = function() {

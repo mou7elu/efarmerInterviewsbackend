@@ -43,6 +43,21 @@ class SecteurAdministratifRepository extends BaseRepository {
   }
 
   /**
+   * Check if secteur code exists in a specific souspref
+   * @param {string} code - Secteur code
+   * @param {string} sousprefId - Souspref ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInSouspref(code, sousprefId, excludeId = null) {
+    const filters = { Cod_SecteurAdministratif: code, SousprefId: sousprefId };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
    * Get all secteurs with populated souspref
    * @returns {Promise<Array>} Array of secteurs with populated souspref
    */

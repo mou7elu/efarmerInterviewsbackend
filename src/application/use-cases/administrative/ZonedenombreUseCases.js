@@ -17,9 +17,9 @@ class CreateZonedenombreUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    const codeExists = await repository.codeExists(data.Cod_ZD);
+    const codeExists = await repository.codeExistsInSecteur(data.Cod_ZD, data.SecteurAdministratifId);
     if (codeExists) {
-      throw new ValidationError('Une zone de dénombrement avec ce code existe déjà');
+      throw new ValidationError('Une zone de dénombrement avec ce code existe déjà dans ce secteur administratif');
     }
 
     const zone = await repository.create(data);
@@ -86,10 +86,13 @@ class UpdateZonedenombreUseCase {
       throw new ValidationError(validation.errors.join(', '));
     }
 
-    if (data.Cod_ZD) {
-      const codeExists = await repository.codeExists(data.Cod_ZD, id);
+    if (data.Cod_ZD || data.SecteurAdministratifId) {
+      const checkCode = data.Cod_ZD || existing.Cod_ZD;
+      const checkSecteurId = data.SecteurAdministratifId || existing.SecteurAdministratifId;
+      
+      const codeExists = await repository.codeExistsInSecteur(checkCode, checkSecteurId, id);
       if (codeExists) {
-        throw new ValidationError('Une zone de dénombrement avec ce code existe déjà');
+        throw new ValidationError('Une zone de dénombrement avec ce code existe déjà dans ce secteur administratif');
       }
     }
 

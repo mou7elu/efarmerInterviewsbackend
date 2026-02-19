@@ -43,6 +43,21 @@ class LocaliteRepository extends BaseRepository {
   }
 
   /**
+   * Check if localite code exists in a specific village
+   * @param {string} code - Localite code
+   * @param {string} villageId - Village ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInVillage(code, villageId, excludeId = null) {
+    const filters = { Cod_localite: code, VillageId: villageId };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
    * Get all localites with populated village
    * @returns {Promise<Array>} Array of localites with populated village
    */

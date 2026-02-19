@@ -16,10 +16,12 @@ class SousprefController {
    */
   async create(req, res) {
     try {
+      console.log('SousprefController.create - Body:', req.body);
       const useCase = new CreateSousprefUseCase();
       const souspref = await useCase.execute(req.body);
       res.status(201).json(souspref);
     } catch (error) {
+      console.error('SousprefController.create - Error:', error);
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }

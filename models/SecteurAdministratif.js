@@ -7,8 +7,7 @@ const SecteurAdministratifSchema = new mongoose.Schema({
   },// Libellé du secteur administratif
   Cod_SecteurAdministratif: {
     type: String,
-    required: true,
-    unique: true,},// Code du secteur administratif
+    required: true,},// Code du secteur administratif
   SousprefId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Souspref',
@@ -17,6 +16,9 @@ const SecteurAdministratifSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par sous-préfecture
+SecteurAdministratifSchema.index({ Cod_SecteurAdministratif: 1, SousprefId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 SecteurAdministratifSchema.methods.toDTO = function() {

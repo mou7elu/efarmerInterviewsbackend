@@ -10,6 +10,9 @@ const {
   DeleteMenageUseCase
 } = require('../../../application/use-cases/administrative/MenageUseCases');
 
+const pdfGeneratorService = require('../../../services/pdfGenerator');
+const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+
 /**
  * Menage Controller
  */
@@ -143,6 +146,87 @@ class MenageController {
         return res.status(404).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Generate PDF questionnaire for a ménage
+   */
+  async generatePDF(req, res) {
+    try {
+      console.log('=== Début génération PDF pour ménage ID:', req.params.id);
+      
+      // Récupérer les données du ménage avec toutes les populations nécessaires pour le PDF
+      const MenageModel = require('../../../../models/Menage');
+      const menageDoc = await MenageModel.findById(req.params.id)
+        .populate('PaysId')
+        .populate('DistrictId')
+        .populate('RegionId')
+        .populate('DepartementId')
+        .populate('SousprefId')
+        .populate('SecteurAdministratifId')
+        .populate('ZonedenombreId')
+        .populate('VillageId')
+        .populate('LocaliteId')
+        .populate('EnqueteurId');
+      
+      if (!menageDoc) {
+        throw new NotFoundError('Ménage non trouvé');
+      }
+      
+      // Convertir en objet simple pour le PDF
+      const menage = menageDoc.toObject();
+      
+      console.log('Ménage récupéré:', {
+        id: menage._id || menage.id,
+        code: menage.Cod_menage,
+        hasData: !!menage,
+        enqueteur: menage.EnqueteurId ? {
+          id: menage.EnqueteurId._id,
+          nom: menage.EnqueteurId.nom,
+          prenom: menage.EnqueteurId.prenom
+        } : null
+      });
+
+      // Générer le PDF
+      console.log('Génération du PDF en cours...');
+      const pdfBuffer = await pdfGeneratorService.generatePDF(menage);
+      
+      console.log('PDF généré, taille:', pdfBuffer.length, 'bytes');
+      console.log('Type de buffer:', Buffer.isBuffer(pdfBuffer));
+
+      // Sécuriser le nom de fichier
+      const codeMenage = menage.Cod_menage || menage._id || menage.id || 'sans-code';
+      const filename = `Questionnaire_Denombrement_${codeMenage}.pdf`;
+      
+      console.log('Nom du fichier:', filename);
+
+      // Définir les en-têtes pour le téléchargement
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      // Important: ne pas définir d'autres headers après
+      res.status(200);
+
+      // Envoyer le PDF avec res.end() qui est plus adapté pour les Buffers
+      res.end(pdfBuffer, 'binary');
+      
+      console.log('=== PDF envoyé avec succès');
+    } catch (error) {
+      console.error('=== ERREUR lors de la génération du PDF:', error);
+      console.error('Stack trace:', error.stack);
+      
+      // Ne pas envoyer de réponse si les headers ont déjà été envoyés
+      if (res.headersSent) {
+        console.error('Headers déjà envoyés, impossible de renvoyer une erreur');
+        return;
+      }
+      
+      if (error.name === 'NotFoundError') {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Erreur lors de la génération du PDF: ' + error.message });
     }
   }
 }

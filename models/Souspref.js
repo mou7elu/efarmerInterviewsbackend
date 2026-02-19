@@ -7,8 +7,7 @@ const SousprefSchema = new mongoose.Schema({
   },// Libellé de la sous-préfecture
   Cod_Souspref: {
     type: String,
-    required: true,
-    unique: true,},// Code de la sous-préfecture
+    required: true,},// Code de la sous-préfecture
   DepartementId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Departement',
@@ -17,6 +16,9 @@ const SousprefSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par département
+SousprefSchema.index({ Cod_Souspref: 1, DepartementId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 SousprefSchema.methods.toDTO = function() {

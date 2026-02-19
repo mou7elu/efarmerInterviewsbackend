@@ -8,7 +8,6 @@ const districtSchema = new mongoose.Schema({
    Cod_district: {
     type: String,
     required: true,
-    unique: true,
   },// Code du district
  // Coordonnée du district geojson polygon
   Sommeil: {
@@ -23,6 +22,9 @@ const districtSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par pays
+districtSchema.index({ Cod_district: 1, PaysId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 districtSchema.methods.toDTO = function() {

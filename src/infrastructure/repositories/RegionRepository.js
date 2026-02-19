@@ -43,6 +43,21 @@ class RegionRepository extends BaseRepository {
   }
 
   /**
+   * Check if region code exists in a specific district
+   * @param {string} code - Region code
+   * @param {string} districtId - District ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInDistrict(code, districtId, excludeId = null) {
+    const filters = { Cod_region: code, DistrictId: districtId };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
    * Get all regions with populated district
    * @returns {Promise<Array>} Array of regions with populated district
    */

@@ -7,8 +7,7 @@ const LocaliteSchema = new mongoose.Schema({
   },// Libellé de la localité 
   Cod_localite: {
     type: String,
-    required: true,
-    unique: true,},// Code de la localité 
+    required: true,},// Code de la localité 
   VillageId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Village',
@@ -17,6 +16,9 @@ const LocaliteSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par village
+LocaliteSchema.index({ Cod_localite: 1, VillageId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 LocaliteSchema.methods.toDTO = function() {

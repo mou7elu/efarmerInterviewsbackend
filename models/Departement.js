@@ -7,8 +7,7 @@ const DepartementSchema = new mongoose.Schema({
   },// Libellé du département
   Cod_departement: {
     type: String,
-    required: true,
-    unique: true,},// Code du département
+    required: true,},// Code du département
     RegionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Region',
@@ -17,6 +16,9 @@ const DepartementSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt
 });
+
+// Index composé pour garantir l'unicité du code par région
+DepartementSchema.index({ Cod_departement: 1, RegionId: 1 }, { unique: true });
 
 // Méthode pour convertir en DTO (Data Transfer Object)
 DepartementSchema.methods.toDTO = function() {

@@ -105,6 +105,9 @@ router.get('/menage', MenageController.getAll);
 // GET /api/administrative/menage/:id - Obtenir un ménage par ID
 router.get('/menage/:id', MenageController.getById);
 
+// GET /api/administrative/menage/:id/pdf - Générer le PDF du questionnaire de dénombrement
+router.get('/menage/:id/pdf', MenageController.generatePDF);
+
 // GET /api/administrative/menage/localite/:localiteId - Ménages par localité
 router.get('/menage/localite/:localiteId', MenageController.getByLocalite);
 

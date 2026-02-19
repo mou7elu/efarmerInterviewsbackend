@@ -43,6 +43,21 @@ class ZonedenombreRepository extends BaseRepository {
   }
 
   /**
+   * Check if zone code exists in a specific secteur administratif
+   * @param {string} code - Zone code
+   * @param {string} secteurId - Secteur administratif ID
+   * @param {string} excludeId - ID to exclude from check (for updates)
+   * @returns {Promise<boolean>} True if exists, false otherwise
+   */
+  async codeExistsInSecteur(code, secteurId, excludeId = null) {
+    const filters = { Cod_ZD: code, SecteurAdministratifId: secteurId };
+    if (excludeId) {
+      filters._id = { $ne: excludeId };
+    }
+    return await this.exists(filters);
+  }
+
+  /**
    * Get all zones with populated secteur
    * @returns {Promise<Array>} Array of zones with populated secteur
    */
