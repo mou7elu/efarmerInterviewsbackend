@@ -150,8 +150,10 @@ class Producteur {
       errors.push('La référence à l\'enquêteur est requise');
     }
 
-    if (this.LienRepresentExploitant === undefined || this.LienRepresentExploitant === null) {
-      errors.push('Le lien avec l\'exploitant est requis');
+    if (!this.IsExploitant) {
+      if (this.LienRepresentExploitant === undefined || this.LienRepresentExploitant === null || this.LienRepresentExploitant === '') {
+        errors.push('Le lien avec l\'exploitant est requis');
+      }
     }
 
     return {

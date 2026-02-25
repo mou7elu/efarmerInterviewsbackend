@@ -1,7 +1,10 @@
 const ProducteurRepository = require('../../../infrastructure/repositories/ProducteurRepository');
 const Producteur = require('../../../domain/entities/Producteur');
+const codeGenerationService = require('../../../domain/services/CodeGenerationService');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const ProducteurModel = require('../../../../models/Producteur');
+const MenageModel = require('../../../../models/Menage');
 
 const repository = new ProducteurRepository();
 
@@ -10,21 +13,88 @@ const repository = new ProducteurRepository();
  */
 class CreateProducteurUseCase {
   async execute(data) {
-    const entity = new Producteur(data);
+    console.log('CreateProducteurUseCase.execute - start');
+    console.log('CreateProducteurUseCase.execute - input:', JSON.stringify(data, null, 2));
+    const payload = { ...data };
+
+    if (payload.IsExploitant && (payload.LienRepresentExploitant === undefined || payload.LienRepresentExploitant === null || payload.LienRepresentExploitant === '')) {
+      payload.LienRepresentExploitant = 0;
+    }
+
+    if (!payload.Code || payload.Code.trim() === '') {
+      console.log('CreateProducteurUseCase.execute - generating Code');
+      const { code, sequence } = await this.generateProducteurCode(payload.MenageId);
+      payload.Code = code;
+
+      let nextSequence = sequence;
+      while (await repository.codeExists(payload.Code)) {
+        console.warn('CreateProducteurUseCase.execute - duplicate code, incrementing:', payload.Code);
+        nextSequence += 1;
+        const ordinalStr = String(nextSequence).padStart(2, '0');
+        payload.Code = `${payload.Code.split('-').slice(0, -1).join('-')}-${ordinalStr}`;
+      }
+    }
+
+    console.log('CreateProducteurUseCase.execute - final Code:', payload.Code);
+    const entity = new Producteur(payload);
     const validation = entity.validate();
     
     if (!validation.isValid) {
+      console.error('CreateProducteurUseCase.execute - validation errors:', validation.errors);
       throw new ValidationError(validation.errors.join(', '));
     }
 
     // Check if code already exists
-    const codeExists = await repository.codeExists(data.Code);
+    const codeExists = await repository.codeExists(payload.Code);
     if (codeExists) {
+      console.error('CreateProducteurUseCase.execute - code exists:', payload.Code);
       throw new ValidationError('Un producteur avec ce code existe déjà');
     }
 
-    const producteur = await repository.create(data);
+    const producteur = await repository.create(payload);
+    console.log('CreateProducteurUseCase.execute - created:', producteur?.id || producteur?._id || producteur?.Code);
     return producteur.toDTO();
+  }
+
+  async generateProducteurCode(menageId) {
+    console.log('CreateProducteurUseCase.generateProducteurCode - start');
+
+    if (!menageId) {
+      throw new ValidationError('La référence au ménage est requise pour générer le code producteur');
+    }
+
+    const menage = await MenageModel.findById(menageId).select('Cod_menage').lean();
+    if (!menage?.Cod_menage) {
+      throw new ValidationError('Code ménage introuvable pour générer le code producteur');
+    }
+
+    const prefix = menage.Cod_menage;
+    const prefixEscaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const existingProducteurs = await ProducteurModel
+      .find({ Code: { $regex: `^${prefixEscaped}-` } })
+      .select('Code')
+      .lean();
+
+    const existingOrdinals = existingProducteurs
+      .map((p) => {
+        const parts = p.Code.split('-');
+        const ordinalStr = parts[parts.length - 1];
+        return Number.parseInt(ordinalStr, 10);
+      })
+      .filter((value) => !Number.isNaN(value));
+
+    let nextSequence = 1;
+    if (existingOrdinals.length > 0) {
+      nextSequence = Math.max(...existingOrdinals) + 1;
+    }
+
+    const ordinalStr = String(nextSequence).padStart(2, '0');
+    const code = `${prefix}-${ordinalStr}`;
+
+    console.log('CreateProducteurUseCase.generateProducteurCode - nextSequence:', nextSequence);
+
+    return { code, sequence: nextSequence };
   }
 }
 

@@ -2,28 +2,111 @@ const ParcelleRepository = require('../../../infrastructure/repositories/Parcell
 const Parcelle = require('../../../domain/entities/Parcelle');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const ProducteurModel = require('../../../../models/Producteur');
+const ParcelleModel = require('../../../../models/Parcelle');
 
 const repository = new ParcelleRepository();
+
+/**
+ * Generate unique Parcelle code based on Producteur Code + ordinal
+ * Format: ProducteurCode-XX (e.g., "023-01-6090-CB24-01-01")
+ */
+async function generateParcelleCode(producteurId) {
+  console.log('🔢 generateParcelleCode - ProducteurId:', producteurId);
+  
+  // Get Producteur to retrieve its Code
+  const producteur = await ProducteurModel.findById(producteurId).lean();
+  if (!producteur) {
+    console.error('❌ generateParcelleCode - producteur not found');
+    throw new ValidationError('Producteur non trouvé');
+  }
+  
+  console.log('📦 generateParcelleCode - Producteur Code:', producteur.Code);
+  
+  // Find all parcelles with codes that start with this producteur's code
+  const prefix = producteur.Code;
+  const existingParcelles = await ParcelleModel.find({
+    Code: new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-`, 'i')
+  }).lean();
+  
+  console.log('📊 generateParcelleCode - existing parcelles count:', existingParcelles.length);
+  
+  // Extract ordinals from existing codes
+  const ordinals = existingParcelles
+    .map(p => {
+      const match = p.Code.match(/-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter(n => !isNaN(n));
+  
+  console.log('🔢 generateParcelleCode - existing ordinals:', ordinals);
+  
+  // Find next available ordinal
+  let nextOrdinal = 1;
+  if (ordinals.length > 0) {
+    const maxOrdinal = Math.max(...ordinals);
+    nextOrdinal = maxOrdinal + 1;
+  }
+  
+  const newCode = `${prefix}-${String(nextOrdinal).padStart(2, '0')}`;
+  console.log('✅ generateParcelleCode - generated code:', newCode);
+  
+  return newCode;
+}
 
 /**
  * Create Parcelle Use Case
  */
 class CreateParcelleUseCase {
   async execute(data) {
+    console.log('🚀 CreateParcelleUseCase.execute - start');
+    console.log('📥 CreateParcelleUseCase.execute - input:', JSON.stringify(data, null, 2));
+    
+    // Generate Code if not provided
+    if (!data.Code || data.Code.trim() === '') {
+      console.log('🔄 CreateParcelleUseCase - generating Code...');
+      data.Code = await generateParcelleCode(data.ProducteurId);
+      console.log('✅ CreateParcelleUseCase - generated Code:', data.Code);
+    }
+    
+    // Clean geographic fields when IsSameLocalitethanExploitant is true
+    if (data.IsSameLocalitethanExploitant === true) {
+      console.log('🧹 CreateParcelleUseCase - cleaning geographic fields (same locality as exploitant)');
+      delete data.RegionId;
+      delete data.DepartementId;
+      delete data.SousprefId;
+      delete data.SecteurAdministratifId;
+      delete data.ZonedenombreId;
+      delete data.LocaliteId;
+    } else {
+      // Convert empty strings to undefined for ObjectId fields
+      const geoFields = ['RegionId', 'DepartementId', 'SousprefId', 'SecteurAdministratifId', 'ZonedenombreId', 'LocaliteId'];
+      geoFields.forEach(field => {
+        if (data[field] === '' || data[field] === null) {
+          delete data[field];
+        }
+      });
+    }
+    
     const entity = new Parcelle(data);
     const validation = entity.validate();
     
     if (!validation.isValid) {
+      console.error('❌ CreateParcelleUseCase.execute - validation errors:', validation.errors);
       throw new ValidationError(validation.errors.join(', '));
     }
+    console.log('✅ CreateParcelleUseCase.execute - validation passed');
 
     // Check if code already exists
     const codeExists = await repository.codeExists(data.Code);
     if (codeExists) {
+      console.error('❌ CreateParcelleUseCase.execute - code exists:', data.Code);
       throw new ValidationError('Une parcelle avec ce code existe déjà');
     }
 
+    console.log('💾 CreateParcelleUseCase.execute - creating in DB...');
     const parcelle = await repository.create(data);
+    console.log('✅ CreateParcelleUseCase.execute - created:', parcelle?.id || parcelle?._id || parcelle?.Code);
     return parcelle.toDTO();
   }
 }

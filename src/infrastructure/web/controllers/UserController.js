@@ -24,10 +24,20 @@ class UserController {
 
   async create(req, res) {
     try {
+      console.log('👤 UserController.create - Début');
+      console.log('📦 Données reçues:', JSON.stringify(req.body, null, 2));
+      
       const useCase = new CreateUserUseCase();
+      console.log('🔧 UseCase créé, exécution...');
+      
       const user = await useCase.execute(req.body);
+      console.log('✅ Utilisateur créé avec succès:', user?.id || user?._id);
+      
       res.status(201).json(user);
     } catch (error) {
+      console.error('❌ Erreur UserController.create:', error);
+      console.error('📍 Stack:', error.stack);
+      
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }

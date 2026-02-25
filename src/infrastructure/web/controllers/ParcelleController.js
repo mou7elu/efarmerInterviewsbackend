@@ -30,10 +30,15 @@ const {
 class ParcelleController {
   async create(req, res) {
     try {
+      console.log('🌾 ParcelleController.create - start');
+      console.log('📦 ParcelleController.create - body:', JSON.stringify(req.body, null, 2));
       const useCase = new CreateParcelleUseCase();
       const parcelle = await useCase.execute(req.body);
+      console.log('✅ ParcelleController.create - created:', parcelle?.id || parcelle?._id || parcelle?.Code);
       res.status(201).json(parcelle);
     } catch (error) {
+      console.error('❌ ParcelleController.create - error:', error.message);
+      console.error('📋 ParcelleController.create - stack:', error.stack);
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }

@@ -24,10 +24,15 @@ const {
 class ProducteurController {
   async create(req, res) {
     try {
+      console.log('ProducteurController.create - start');
+      console.log('ProducteurController.create - body:', JSON.stringify(req.body, null, 2));
       const useCase = new CreateProducteurUseCase();
       const producteur = await useCase.execute(req.body);
+      console.log('ProducteurController.create - created:', producteur?.id || producteur?._id || producteur?.Code);
       res.status(201).json(producteur);
     } catch (error) {
+      console.error('ProducteurController.create - error:', error.message);
+      console.error('ProducteurController.create - stack:', error.stack);
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }

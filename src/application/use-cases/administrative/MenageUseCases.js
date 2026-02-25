@@ -10,24 +10,39 @@ const repository = new MenageRepository();
  */
 class CreateMenageUseCase {
   async execute(data) {
+    console.log('🚀 CreateMenageUseCase.execute - Début');
+    console.log('📥 Données entrantes:', JSON.stringify(data, null, 2));
+    
     // Générer automatiquement le Cod_menage s'il n'est pas fourni
     if (!data.Cod_menage || data.Cod_menage.trim() === '') {
+      console.log('🔄 Génération automatique du Cod_menage...');
       data.Cod_menage = await this.generateCodMenage(data);
+      console.log('✅ Cod_menage généré:', data.Cod_menage);
     }
     
+    console.log('🔍 Création de l\'entité Menage...');
     const entity = new Menage(data);
+    
+    console.log('✔️ Validation de l\'entité...');
     const validation = entity.validate();
     
     if (!validation.isValid) {
+      console.error('❌ Validation échouée:', validation.errors);
       throw new ValidationError(validation.errors.join(', '));
     }
+    console.log('✅ Validation réussie');
 
+    console.log('🔍 Vérification de l\'unicité du code...');
     const codeExists = await repository.codeExists(data.Cod_menage);
     if (codeExists) {
+      console.error('❌ Code ménage déjà existant:', data.Cod_menage);
       throw new ValidationError('Un ménage avec ce code existe déjà');
     }
+    console.log('✅ Code unique');
 
+    console.log('💾 Sauvegarde en base de données...');
     const menage = await repository.create(data);
+    console.log('✅ Ménage créé avec succès:', menage.id || menage._id);
     return menage.toDTO();
   }
 
@@ -37,6 +52,8 @@ class CreateMenageUseCase {
    * Exemple: 023-01-6090-CB24-01
    */
   async generateCodMenage(data) {
+    console.log('🔢 generateCodMenage - Début');
+    
     // Récupérer les codes nécessaires
     const Departement = require('../../../../models/Departement');
     const Souspref = require('../../../../models/Souspref');
@@ -58,11 +75,41 @@ class CreateMenageUseCase {
     // ID Agent: prendre les 4 derniers caractères de l'EnqueteurId
     const agentId = data.EnqueteurId ? data.EnqueteurId.toString().slice(-4).toUpperCase() : '0000';
     
-    // Numéro ordinal: compter les ménages existants pour cet enquêteur dans cette ZD
-    const count = await repository.countByEnqueteurAndZone(data.EnqueteurId, data.ZonedenombreId);
-    const ordinal = String(count + 1).padStart(2, '0');
+    console.log('📍 Codes extraits:', { deptCode, sousprefCode, zdCode, agentId });
     
-    return `${deptCode}-${sousprefCode}-${zdCode}-${agentId}-${ordinal}`;
+    // Trouver le prochain numéro ordinal disponible
+    // Chercher tous les codes existants avec le même préfixe
+    const prefix = `${deptCode}-${sousprefCode}-${zdCode}-${agentId}`;
+    const MenageModel = require('../../../../models/Menage');
+    
+    // Utiliser une regex pour trouver tous les codes commençant par ce préfixe
+    const existingMenages = await MenageModel.find({
+      Cod_menage: { $regex: `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-` }
+    }).select('Cod_menage').lean();
+    
+    console.log('📊 Ménages existants avec ce préfixe:', existingMenages.length);
+    
+    // Extraire les numéros ordinaux existants
+    const existingOrdinals = existingMenages.map(m => {
+      const parts = m.Cod_menage.split('-');
+      const ordinal = parts[parts.length - 1];
+      return parseInt(ordinal, 10);
+    }).filter(n => !isNaN(n));
+    
+    console.log('🔢 Ordinaux existants:', existingOrdinals);
+    
+    // Trouver le prochain numéro disponible
+    let ordinal = 1;
+    while (existingOrdinals.includes(ordinal)) {
+      ordinal++;
+    }
+    
+    const ordinalStr = String(ordinal).padStart(2, '0');
+    const codeMenage = `${prefix}-${ordinalStr}`;
+    
+    console.log('✅ Code ménage généré:', codeMenage);
+    
+    return codeMenage;
   }
 }
 

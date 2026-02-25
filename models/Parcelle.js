@@ -60,32 +60,32 @@ const parcelleSchema = new mongoose.Schema({
   RegionId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Region',
-          required: true,
+          required: false,
       },// Identifiant de la région si IsSameLocalitethanExploitant est false
       DepartementId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Departement',
-        required: true,
+        required: false,
       },// Référence au departement si IsSameLocalitethanExploitant est false
       SousprefId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Souspref',
-        required: true,
+        required: false,
       },// Référence au sous-préfecture si IsSameLocalitethanExploitant est false
        SecteurAdministratifId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SecteurAdministratif',
-        required: true,
+        required: false,
       },// Référence au secteur administratif   si IsSameLocalitethanExploitant est false  
       ZonedenombreId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Zonedenombre',
-        required: true,
+        required: false,
       },// Référence à la zone de dénombrement si IsSameLocalitethanExploitant est false
     LocaliteId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Localite',
-        required: true,
+        required: false,
       },// Référence à la localité si IsSameLocalitethanExploitant est false
        MilieuResidence: {
     type: Number,

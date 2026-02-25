@@ -42,21 +42,12 @@ const userToDTO = (u) => {
  */
 class CreateUserUseCase {
   async execute(data) {
-    const entity = new User(data);
-    const validation = entity.validate();
+    console.log('🚀 CreateUserUseCase.execute - Début');
+    console.log('📥 Données entrantes:', JSON.stringify(data, null, 2));
     
-    if (!validation.isValid) {
-      throw new ValidationError(validation.errors.join(', '));
-    }
-
-    // Check if email already exists
-    const emailExists = await repository.emailExists(data.email);
-    if (emailExists) {
-      throw new ValidationError('Un utilisateur avec cet email existe déjà');
-    }
-
-    // Générer un code_ut unique si non fourni
+    // Générer un code_ut unique si non fourni AVANT validation
     if (!data.code_ut) {
+      console.log('🔄 Génération code_ut...');
       const generateCodeUt = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -67,15 +58,45 @@ class CreateUserUseCase {
       };
 
       data.code_ut = generateCodeUt();
+      console.log('✅ code_ut généré:', data.code_ut);
+      
       // Vérifier l'unicité du code
-      const UserModel = require('../../../models/User');
+      const UserModel = require('../../../../models/User');
       while (await UserModel.findOne({ code_ut: data.code_ut })) {
+        console.log('⚠️ code_ut en doublon, regénération...');
         data.code_ut = generateCodeUt();
       }
+      console.log('✅ code_ut unique confirmé:', data.code_ut);
     }
 
+    console.log('🔍 Création entité User...');
+    const entity = new User(data);
+    
+    console.log('✔️ Validation entité...');
+    const validation = entity.validate();
+    
+    if (!validation.isValid) {
+      console.error('❌ Validation échouée:', validation.errors);
+      throw new ValidationError(validation.errors.join(', '));
+    }
+    console.log('✅ Validation OK');
+
+    // Check if email already exists
+    console.log('🔍 Vérification unicité email...');
+    const emailExists = await repository.emailExists(data.email);
+    if (emailExists) {
+      console.error('❌ Email déjà existant:', data.email);
+      throw new ValidationError('Un utilisateur avec cet email existe déjà');
+    }
+    console.log('✅ Email unique');
+
+    console.log('💾 Création dans repository...');
     const user = await repository.create(data);
-    return userToDTO(user);
+    console.log('✅ Utilisateur créé dans DB:', user?._id || user?.id);
+    
+    const dto = userToDTO(user);
+    console.log('📤 DTO créé, retour');
+    return dto;
   }
 }
 

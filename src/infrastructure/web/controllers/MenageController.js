@@ -22,10 +22,15 @@ class MenageController {
    */
   async create(req, res) {
     try {
+      console.log('🏠 MenageController.create - Début');
+      console.log('📦 Données reçues:', JSON.stringify(req.body, null, 2));
       const useCase = new CreateMenageUseCase();
       const menage = await useCase.execute(req.body);
+      console.log('✅ Ménage créé avec succès:', menage);
       res.status(201).json(menage);
     } catch (error) {
+      console.error('❌ Erreur MenageController.create:', error.message);
+      console.error('📋 Stack:', error.stack);
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: error.message });
       }
