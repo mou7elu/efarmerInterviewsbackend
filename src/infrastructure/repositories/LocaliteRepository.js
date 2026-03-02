@@ -1,5 +1,6 @@
 const BaseRepository = require('./BaseRepository');
 const LocaliteModel = require('../../../models/Localite');
+const mongoose = require('mongoose');
 
 /**
  * LocaliteRepository
@@ -50,7 +51,9 @@ class LocaliteRepository extends BaseRepository {
    * @returns {Promise<boolean>} True if exists, false otherwise
    */
   async codeExistsInVillage(code, villageId, excludeId = null) {
-    const filters = { Cod_localite: code, VillageId: villageId };
+    // Convertir villageId en ObjectId pour assurer une comparaison correcte
+    const villageObjectId = new mongoose.Types.ObjectId(villageId);
+    const filters = { Cod_localite: code, VillageId: villageObjectId };
     if (excludeId) {
       filters._id = { $ne: excludeId };
     }

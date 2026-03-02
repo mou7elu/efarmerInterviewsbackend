@@ -2,6 +2,7 @@ const Village = require('../../../../models/Village');
 const Zonedenombre = require('../../../../models/Zonedenombre');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const mongoose = require('mongoose');
 
 class CreateVillageUseCase {
   async execute(data) {
@@ -11,6 +12,10 @@ class CreateVillageUseCase {
 
     if (!data.ZonedenombreId) {
       throw new ValidationError('La zone de dénombrement est requise');
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(data.ZonedenombreId)) {
+      throw new ValidationError(`ZonedenombreId invalide: "${data.ZonedenombreId}" n'est pas un identifiant valide`);
     }
 
     const zone = await Zonedenombre.findById(data.ZonedenombreId);
@@ -75,7 +80,14 @@ class UpdateVillageUseCase {
     }
 
     if (data.Lib_village) village.Lib_village = data.Lib_village.trim();
-    if (data.ZonedenombreId !== undefined) village.ZonedenombreId = data.ZonedenombreId;
+    
+    if (data.ZonedenombreId !== undefined) {
+      if (data.ZonedenombreId && !mongoose.Types.ObjectId.isValid(data.ZonedenombreId)) {
+        throw new ValidationError(`ZonedenombreId invalide: "${data.ZonedenombreId}" n'est pas un identifiant valide`);
+      }
+      village.ZonedenombreId = data.ZonedenombreId;
+    }
+    
     if (data.Coordonnee !== undefined) village.Coordonnee = data.Coordonnee;
 
     await village.save();

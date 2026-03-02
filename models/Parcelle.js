@@ -57,6 +57,11 @@ const parcelleSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },// Indique si la parcelle est dans la même localité que l'exploitant
+  DistrictId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'District',
+    required: false,
+  },// Identifiant du district si IsSameLocalitethanExploitant est false
   RegionId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Region',

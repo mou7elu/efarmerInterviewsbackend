@@ -44,6 +44,7 @@ class Producteur {
     this.PhotoJustificative = data.PhotoJustificative;
     this.PieceExploitant = data.PieceExploitant;
     this.NumeroPieceExploitant = data.NumeroPieceExploitant;
+    this.PrecisionPieceExploitant = data.PrecisionPieceExploitant;
     this.SituationMatrimonialeExploitant = data.SituationMatrimonialeExploitant;
     this.PrecisionSituationMatrimoniale = data.PrecisionSituationMatrimoniale;
 
@@ -75,7 +76,7 @@ class Producteur {
     this.HasStockageBatimentAgricole = data.HasStockageBatimentAgricole || false;
     this.CapaciteStockageKg = data.CapaciteStockageKg || 0;
     this.HasMachineAgricole = data.HasMachineAgricole || false;
-    this.MachineAgricole = data.MachineAgricole || 0;
+    this.MachineAgricole = data.MachineAgricole || [];
     this.PreciserMachineAgricole = data.PreciserMachineAgricole;
     this.EquipementSechageAgricole = data.EquipementSechageAgricole || 0;
     this.PreciserEquipementSechage = data.PreciserEquipementSechage;

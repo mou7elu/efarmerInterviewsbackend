@@ -61,7 +61,6 @@ class Menage {
     if (!this.SecteurAdministratifId) errors.push('La référence au secteur administratif est requise');
     if (!this.ZonedenombreId) errors.push('La référence à la zone de dénombrement est requise');
     if (!this.VillageId) errors.push('La référence au village est requise');
-    if (!this.LocaliteId) errors.push('La référence à la localité est requise');
     if (!this.EnqueteurId) errors.push('La référence à l\'enquêteur est requise');
 
     return {

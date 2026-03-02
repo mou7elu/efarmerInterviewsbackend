@@ -128,11 +128,6 @@ class ProducteurRepository extends BaseRepository {
       populate: [
         'MenageId',
         'EnqueteurId',
-        'NiveauScolaireRepresentant',
-        'ProfessionRepresentant',
-        'NiveauScolaireExploitant',
-        'ProfessionExploitant',
-        'PieceExploitant',
         'PaysNaissRepresentant',
         'LieuNaissRepresentant',
         'PaysNaissExploitant',

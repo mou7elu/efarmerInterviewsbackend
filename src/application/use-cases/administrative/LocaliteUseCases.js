@@ -2,6 +2,8 @@ const LocaliteRepository = require('../../../infrastructure/repositories/Localit
 const Localite = require('../../../domain/entities/Localite');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const mongoose = require('mongoose');
+const Village = require('../../../../models/Village');
 
 const repository = new LocaliteRepository();
 
@@ -10,6 +12,15 @@ const repository = new LocaliteRepository();
  */
 class CreateLocaliteUseCase {
   async execute(data) {
+    // Validate VillageId is a valid ObjectId
+    if (!data.VillageId) {
+      throw new ValidationError('VillageId est requis');
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(data.VillageId)) {
+      throw new ValidationError(`VillageId invalide: "${data.VillageId}" n'est pas un identifiant valide`);
+    }
+
     const entity = new Localite(data);
     const validation = entity.validate();
     
@@ -19,7 +30,9 @@ class CreateLocaliteUseCase {
 
     const codeExists = await repository.codeExistsInVillage(data.Cod_localite, data.VillageId);
     if (codeExists) {
-      throw new ValidationError('Une localité avec ce code existe déjà dans ce village');
+      const village = await Village.findById(data.VillageId).select('Lib_village').lean();
+      const villageName = village?.Lib_village || data.VillageId;
+      throw new ValidationError(`Le code "${data.Cod_localite}" existe déjà dans cette localité (${villageName})`);
     }
 
     const localite = await repository.create(data);
@@ -80,6 +93,11 @@ class UpdateLocaliteUseCase {
       throw new NotFoundError('Localité non trouvée');
     }
 
+    // Validate VillageId if provided
+    if (data.VillageId && !mongoose.Types.ObjectId.isValid(data.VillageId)) {
+      throw new ValidationError(`VillageId invalide: "${data.VillageId}" n'est pas un identifiant valide`);
+    }
+
     const entity = new Localite({ ...existing.toObject(), ...data });
     const validation = entity.validate();
     
@@ -93,7 +111,9 @@ class UpdateLocaliteUseCase {
       
       const codeExists = await repository.codeExistsInVillage(checkCode, checkVillageId, id);
       if (codeExists) {
-        throw new ValidationError('Une localité avec ce code existe déjà dans ce village');
+        const village = await Village.findById(checkVillageId).select('Lib_village').lean();
+        const villageName = village?.Lib_village || checkVillageId;
+        throw new ValidationError(`Le code "${checkCode}" existe déjà dans cette localité (${villageName})`);
       }
     }
 

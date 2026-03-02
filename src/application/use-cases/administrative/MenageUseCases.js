@@ -2,6 +2,7 @@ const MenageRepository = require('../../../infrastructure/repositories/MenageRep
 const Menage = require('../../../domain/entities/Menage');
 const { ValidationError } = require('../../../shared/errors/ValidationError');
 const { NotFoundError } = require('../../../shared/errors/NotFoundError');
+const mongoose = require('mongoose');
 
 const repository = new MenageRepository();
 
@@ -53,6 +54,17 @@ class CreateMenageUseCase {
    */
   async generateCodMenage(data) {
     console.log('🔢 generateCodMenage - Début');
+    
+    // Valider les ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(data.DepartementId)) {
+      throw new ValidationError(`DepartementId invalide: "${data.DepartementId}"`);
+    }
+    if (!mongoose.Types.ObjectId.isValid(data.SousprefId)) {
+      throw new ValidationError(`SousprefId invalide: "${data.SousprefId}"`);
+    }
+    if (!mongoose.Types.ObjectId.isValid(data.ZonedenombreId)) {
+      throw new ValidationError(`ZonedenombreId invalide: "${data.ZonedenombreId}"`);
+    }
     
     // Récupérer les codes nécessaires
     const Departement = require('../../../../models/Departement');

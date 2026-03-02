@@ -16,14 +16,37 @@ class LocaliteController {
    */
   async create(req, res) {
     try {
+      console.log('📝 CreateLocalite - Début');
+      console.log('📥 Données reçues:', {
+        Lib_localite: req.body.Lib_localite,
+        Cod_localite: req.body.Cod_localite,
+        VillageId: req.body.VillageId,
+        VillageId_type: typeof req.body.VillageId
+      });
+
       const useCase = new CreateLocaliteUseCase();
       const localite = await useCase.execute(req.body);
+      
+      console.log('✅ Localité créée avec succès:', localite.id);
       res.status(201).json(localite);
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      // Log the full error for debugging
+      console.error('❌ Error creating localite:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        data: {
+          Lib_localite: req.body?.Lib_localite,
+          Cod_localite: req.body?.Cod_localite,
+          VillageId: req.body?.VillageId,
+          VillageId_type: typeof req.body?.VillageId
+        }
+      });
+      
+      if (error.name === 'ValidationError' || error.name === 'CastError') {
         return res.status(400).json({ error: error.message });
       }
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message || 'Erreur lors de la création de la localité' });
     }
   }
 

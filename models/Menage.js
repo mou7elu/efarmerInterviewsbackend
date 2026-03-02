@@ -41,11 +41,11 @@ PaysId: {
       ref: 'Village',
       required: true,
     },// Référence au village
-  LocaliteId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Localite',
-      required: true,
-    },// Référence à la localité
+  // LocaliteId: {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: 'Localite',
+  //     required: true,
+  //   },// Référence à la localité
        EnqueteurId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -101,11 +101,11 @@ PaysId: {
         default: []
       }
     },// Coordonnée du ménage geojson point
-   MilieuResidence: {
-      type: Number,
-      default: 0,
-      required: true,
-    },// Milieu de résidence du ménage (3-rural ou 1-urbain ou 2-semi-urbain)
+  //  MilieuResidence: {
+  //     type: Number,
+  //     default: 0,
+  //     required: true,
+  //   },// Milieu de résidence du ménage (3-rural ou 1-urbain ou 2-semi-urbain)
     
 }, {
   timestamps: true, // Ajoute automatiquement les champs createdAt et updatedAt

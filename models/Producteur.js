@@ -157,17 +157,15 @@ GenreRepresentant: {
       type: Number,
     },// Genre du représentant de l'exploitant
     NiveauScolaireRepresentant: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'NiveauScolaire',
-      },// Référence au niveau scolaire
+        type: Number,
+      },// Niveau d'instruction du représentant (1-7: 1=Non scolarisé, 2=École coranique, 3=Primaire, 4=Secondaire, 5=Technique, 6=Professionnel, 7=Supérieur)
       HasFormationAgricole: {
         type: Boolean,
         default: false,
       },// Indique si le représentant a une formation agricole
           ProfessionRepresentant: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Profession',
-      },// Référence à la profession
+        type: Number,
+      },// Profession du représentant (1-11: 1=Sans emploi, 2=Apprenant, 3=Salarié, ...)
       NatioliteRepresentant: {type:Number,},// Nationalité du représentant de l'exploitant (1-Ivoirienne, 2-étrangère)
       PaysdorigineRepresentant: {
             type: mongoose.Schema.Types.ObjectId,
@@ -202,17 +200,15 @@ GenreExploitant: {
       type: Number,
     },// Genre de l'exploitant
     NiveauScolaireExploitant: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'NiveauScolaire',
-      },// Référence au niveau scolaire
+        type: Number,
+      },// Niveau d'instruction de l'exploitant (1-7: 1=Non scolarisé, 2=École coranique, 3=Primaire, 4=Secondaire, 5=Technique, 6=Professionnel, 7=Supérieur)
       HasFormationAgricole: {
         type: Boolean,
         default: false,
       },// Indique si l'exploitant a une formation agricole
           ProfessionExploitant: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Profession',
-      },// Référence à la profession
+        type: Number,
+      },// Profession de l'exploitant (1-11: 1=Sans emploi, 2=Apprenant, 3=Salarié, ...)
       NationaliteExploitant: {type:Number,},// Nationalité de l'exploitant (1-Ivoirienne, 2-étrangère)
       PaysdorigineExploitant: {
             type: mongoose.Schema.Types.ObjectId,
@@ -231,12 +227,14 @@ GenreExploitant: {
     type: Buffer,
   },// Photo justificative de l'identité de l'exploitant
    PieceExploitant: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Piece',
-          },// Référence au piece Justificatif d’identité
+            type: Number,
+          },// Type de pièce justificatif (1-9: 1=CNI, 2=Attestation, 3=Permis, 4=Passeport, 5=Carte consulaire, 6=CMU, 7=Résidence, 8=Acte naissance, 9=Autres)
           NumeroPieceExploitant: {
     type: String,
-  },// Numéro du piece justificatif d’identité
+  },// Numéro du piece justificatif d'identité
+  PrecisionPieceExploitant: {
+    type: String,
+  },// Précision sur le type de pièce si PieceExploitant = 9 (Autres)
   SituationMatrimonialeExploitant: {
     type: Number,
   },// Situation matrimoniale de l'exploitant (1. Célibataire,2. Marié(e) (Traditionnel, Civil, Religieux) 3. Veuf(ve)  4. Divorcé(e) 5. Concubinage (vivent ensemble sans être mariés)6. Autre (préciser))
@@ -313,6 +311,10 @@ GenreExploitant: {
     type: Number,
     default: 0,
   },// Principale source de combustible pour la cuisine du ménage de l'exploitant (1. Bois de chauffe,2. Gaz ,3. Charbon ,4. Electricité ,5. Autre à préciser )
+  NumsecSocial: {
+    type: Number,
+    default: 0,
+  },
   PreciserSourceCombustible: {
     type: String,
   },// Préciser la source d'énergie pour la cuisine si autre
@@ -334,9 +336,9 @@ GenreExploitant: {
     default: false,
   },// Indique si l'exploitant a des machines agricoles
   MachineAgricole: {
-    type: Number,
-    default: 0,
-  },//  Type de machines agricoles possédées par l'exploitant (1. Tracteur,2. Pulvérisateur / Atomiseur ,3. Épandeur d’engrais ,4. Désherbeur mécanique / Débroussailleuse ,5. Équipement de traitement post récolte ,6. Autre à préciser ) si HasMachineAgricole est true
+    type: [Number],
+    default: [],
+  },//  Types de machines agricoles possédées par l'exploitant (choix multiple: 1=Tracteur, 2=Pulvérisateur, 3=Épandeur, 4=Désherbeur, 5=Traitement post récolte, 6=Autre) si HasMachineAgricole est true
   PreciserMachineAgricole: {
     type: String,
   },// Préciser le type de machine agricole si autre
@@ -361,6 +363,10 @@ GenreExploitant: {
     type: Boolean,
     default: false,
   },// Indique si l'exploitant a accès à une infrastructure de santé
+    HasCouvertureMaladie: {
+    type: Boolean,
+    default: false,
+  },
   distanceInfastructureSanteKm: {
     type: Number,
     default: 0,
